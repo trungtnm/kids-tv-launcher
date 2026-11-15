@@ -11,16 +11,15 @@ inside your home Wi‑Fi network.
 
 ## Screenshots
 
-**On the TV** (captured from a real box, shown here in Vietnamese; the TV screens are
-also available in English)
+**On the TV** (captured from a real box)
 
 | Home screen of a profile | Apps outside the list are locked |
 |---|---|
-| ![Home screen](docs/screenshots/tv-home.jpg) | ![Locked app](docs/screenshots/tv-app-locked.jpg) |
+| ![Home screen](docs/screenshots/en/tv-home.jpg) | ![Locked app](docs/screenshots/en/tv-app-locked.jpg) |
 
 | Bedtime | Entering the parent PIN |
 |---|---|
-| ![Bedtime](docs/screenshots/tv-bedtime.jpg) | ![PIN entry](docs/screenshots/tv-pin.jpg) |
+| ![Bedtime](docs/screenshots/en/tv-bedtime.jpg) | ![PIN entry](docs/screenshots/en/tv-pin.jpg) |
 
 **On the phone** (the admin page rendered with sample data)
 
