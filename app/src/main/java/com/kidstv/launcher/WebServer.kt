@@ -33,7 +33,7 @@ class WebServer(private val ctx: Context) : NanoHTTPD(PORT) {
         if (!uri.startsWith("/api/")) return json(Response.Status.NOT_FOUND, JSONObject().put("error", "not found"))
 
         if (uri == "/api/status") {
-            return ok(JSONObject().put("hasPin", Store.hasPin()).put("lockoutSec", Store.pinLockoutSec()))
+            return ok(JSONObject().put("hasPin", Store.hasPin()).put("lockoutSec", Store.pinLockoutSec()).put("lang", Store.lang.value))
         }
         if (uri == "/api/login" && s.method == Method.POST) {
             val pin = body(s).optString("pin")
@@ -63,32 +63,33 @@ class WebServer(private val ctx: Context) : NanoHTTPD(PORT) {
             "pause" -> Store.setPaused(true)
             "resume" -> Store.setPaused(false)
             "lock" -> Store.endParent()
-            "wake" -> GuardService.instance?.wake() ?: return bad("Dịch vụ khóa trên TV chưa chạy")
-            "close" -> GuardService.instance?.closeFront() ?: return bad("Dịch vụ khóa trên TV chưa chạy")
-            "home" -> if (GuardService.instance?.goHome() != true) return bad("Dịch vụ khóa trên TV chưa chạy")
+            "wake" -> GuardService.instance?.wake() ?: return bad(S.WEB_GUARD_OFF.text())
+            "close" -> GuardService.instance?.closeFront() ?: return bad(S.WEB_GUARD_OFF.text())
+            "home" -> if (GuardService.instance?.goHome() != true) return bad(S.WEB_GUARD_OFF.text())
             "sleep" -> Store.setSleep(b.optInt("minutes").coerceIn(0, 480))
             "youtube" -> {
-                val id = youtubeId(b.optString("url")) ?: return bad("Link YouTube không hợp lệ")
+                val id = youtubeId(b.optString("url")) ?: return bad(S.WEB_BAD_YOUTUBE.text())
                 val verdict = Store.decide(GuardService.YOUTUBE_PKG)
-                if (verdict is Verdict.Block) return bad("TV đang khóa YouTube: ${verdict.reason}")
-                if (GuardService.instance?.openYoutubeVideo(id) != true) return bad("Không mở được YouTube trên TV")
+                if (verdict is Verdict.Block) return bad(S.WEB_YOUTUBE_LOCKED.text(verdict.reason))
+                if (GuardService.instance?.openYoutubeVideo(id) != true) return bad(S.WEB_YOUTUBE_FAILED.text())
             }
             "launch" -> {
                 val pkg = b.optString("pkg")
                 val verdict = Store.decide(pkg)
-                if (verdict is Verdict.Block) return bad("TV đang khóa ứng dụng này: ${verdict.reason}")
-                if (GuardService.instance?.open(pkg) != true) return bad("Không mở được ứng dụng")
+                if (verdict is Verdict.Block) return bad(S.WEB_APP_LOCKED.text(verdict.reason))
+                if (GuardService.instance?.open(pkg) != true) return bad(S.WEB_APP_FAILED.text())
             }
             "extra" -> Store.grantExtra(b.optInt("minutes").coerceIn(0, 240))
+            "lang" -> if (!Store.setLang(b.optString("lang"))) return bad("unknown language")
             "profile" -> if (!Store.setActive(b.optString("id"))) return bad("unknown profile")
             "pin" -> {
                 // A phone left logged in must not be enough to take over the PIN.
                 if (!Store.checkPin(b.optString("current"))) {
                     val wait = Store.pinLockoutSec()
-                    val msg = if (wait > 0) "Sai quá nhiều lần, thử lại sau $wait giây" else "Mã PIN hiện tại không đúng"
+                    val msg = if (wait > 0) S.PIN_LOCKOUT.text(wait) else S.WEB_PIN_CURRENT_WRONG.text()
                     return json(Response.Status.FORBIDDEN, JSONObject().put("error", msg))
                 }
-                if (!Store.setPin(b.optString("pin"))) return bad("Mã PIN mới cần 4 đến 8 chữ số")
+                if (!Store.setPin(b.optString("pin"))) return bad(S.WEB_PIN_FORMAT.text())
             }
             else -> return bad("unknown action")
         }

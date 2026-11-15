@@ -91,7 +91,92 @@
 <script>
 const $ = (sel, root = document) => root.querySelector(sel);
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const fmtMin = (sec) => { const m = Math.round(sec / 60); return m >= 60 ? `${Math.floor(m / 60)} giờ ${m % 60} phút` : `${m} phút`; };
+// Every text on this page as [Vietnamese, English]; the language is the one set for the TV.
+const TEXT = {
+  hm: ["{0} giờ {1} phút", "{0} h {1} min"],
+  m: ["{0} phút", "{0} min"],
+  loginHint: ["Nhập mã PIN của ba mẹ để quản lý TV.", "Enter the parents' PIN to manage the TV."],
+  pin: ["Mã PIN", "PIN"],
+  login: ["Đăng nhập", "Sign in"],
+  noPin: ["Chưa có mã PIN. Hãy tạo mã PIN trên màn hình TV trước, rồi tải lại trang này.", "No PIN yet. Create one on the TV screen first, then reload this page."],
+  tooMany: ["Sai quá nhiều lần, thử lại sau {0} giây.", "Too many wrong attempts. Try again in {0} seconds."],
+  wrongPin: ["Sai mã PIN.", "Wrong PIN."],
+  actFail: ["Không thực hiện được: ", "Couldn't do that: "],
+  saveFail: ["Không lưu được: ", "Couldn't save: "],
+  lockPaused: ["Đang tạm dừng", "Paused"],
+  lockBedtime: ["Giờ đi ngủ", "Bedtime"],
+  lockQuota: ["Hết giờ hôm nay", "Out of time today"],
+  homeScreen: ["Màn hình chính", "Home screen"],
+  guardOff: ["Dịch vụ khóa trên TV chưa chạy, các giới hạn hiện không có hiệu lực.", "The lock service on the TV is not running, so no limits are being enforced."],
+  tabControl: ["Điều khiển", "Control"],
+  tabManage: ["Quản lý", "Manage"],
+  tabReport: ["Báo cáo", "Reports"],
+  parentOn: ["TV đang ở chế độ ba mẹ", "The TV is in parent mode"],
+  parentOnHint: ["Mọi ứng dụng đang mở khóa và không tính giờ.", "Every app is unlocked and time is not counted."],
+  relock: ["Khóa lại", "Lock again"],
+  watching: ["Đang xem: {0}", "Watching: {0}"],
+  screenOff: ["TV đang tắt màn hình", "The TV screen is off"],
+  extraLeft: ["Thêm giờ: còn {0}′", "Extra time: {0}′ left"],
+  allowed: ["Đang cho phép", "Allowed"],
+  usedToday: ["Hôm nay đã xem {0}", "Watched {0} today"],
+  noLimit: [" (không giới hạn)", " (no limit)"],
+  wake: ["Bật TV", "Wake TV"],
+  resume: ["Cho xem tiếp", "Resume"],
+  pauseNow: ["Tạm dừng TV ngay", "Pause TV now"],
+  plusMin: ["+{0} phút", "+{0} min"],
+  cancelExtra: ["Hủy thêm giờ", "Cancel extra time"],
+  appsOnTv: ["Ứng dụng trên TV", "Apps on the TV"],
+  openNow: ["Đang mở", "Open now"],
+  closeApp: ["Tắt ứng dụng", "Close app"],
+  noAppOpen: ["Không có ứng dụng nào đang mở.", "No app is open."],
+  goHome: ["Về màn hình chính", "Go to home screen"],
+  goHomeKeep: ["Về màn hình chính (không tắt ứng dụng)", "Go to home screen (keep the app running)"],
+  quick: ["Mở nhanh", "Quick launch"],
+  quickOf: [" (ứng dụng của {0})", " ({0}'s apps)"],
+  noAllowed: ["Hồ sơ này chưa được phép ứng dụng nào.", "This profile has no allowed apps yet."],
+  ytTitle: ["Phát video YouTube trên TV", "Play a YouTube video on the TV"],
+  ytPaste: ["Dán link YouTube", "Paste a YouTube link"],
+  play: ["Phát", "Play"],
+  who: ["Ai đang xem", "Who's watching"],
+  sleepIn: ["TV sẽ tắt sau khoảng {0} phút", "The TV turns off in about {0} min"],
+  sleepTitle: ["Hẹn giờ tắt TV", "Sleep timer"],
+  cancelSleep: ["Hủy hẹn giờ", "Cancel timer"],
+  profileSettings: ["Cài đặt hồ sơ", "Profile settings"],
+  name: ["Tên", "Name"],
+  dailyLimit: ["Giới hạn mỗi ngày", "Daily limit"],
+  dailyHint: ["Số phút, 0 là không giới hạn", "Minutes; 0 means no limit"],
+  bedtime: ["Giờ đi ngủ", "Bedtime"],
+  bedHint: ["Để trống cả hai nếu không dùng", "Leave both empty to turn it off"],
+  allowedFor: ["Ứng dụng được phép cho {0}", "Apps allowed for {0}"],
+  discard: ["Bỏ thay đổi", "Discard"],
+  save: ["Lưu thay đổi", "Save changes"],
+  security: ["Bảo mật", "Security"],
+  switchLocked: ["Đổi hồ sơ trên TV cần mã PIN", "Switching profiles on the TV needs the PIN"],
+  curPin: ["Mã PIN hiện tại", "Current PIN"],
+  newPin: ["Mã PIN mới (4–8 số)", "New PIN (4–8 digits)"],
+  changePin: ["Đổi PIN", "Change PIN"],
+  language: ["Ngôn ngữ", "Language"],
+  languageHint: ["Dùng cho cả màn hình TV và trang này", "Used on the TV screens and on this page"],
+  logout: ["Đăng xuất", "Sign out"],
+  todayWhat: ["Hôm nay {0} xem gì", "What {0} watched today"],
+  nothingToday: ["Chưa xem gì hôm nay.", "Nothing watched today."],
+  last7: ["7 ngày qua", "Last 7 days"],
+  peak: ["Cao nhất: {0}", "Peak: {0}"],
+  kid: ["Bé", "Kid"],
+  needCur: ["Hãy nhập mã PIN hiện tại.", "Enter the current PIN."],
+  newPinRule: ["Mã PIN mới cần 4 đến 8 chữ số.", "The new PIN must be 4 to 8 digits."],
+  pinChanged: ["Đã đổi mã PIN. Các thiết bị khác cần đăng nhập lại.", "PIN changed. Other devices need to sign in again."],
+  pinFail: ["Không đổi được: ", "Couldn't change the PIN: "],
+};
+let lang = 'vi';
+function setLang(code) {
+  lang = code === 'en' ? 'en' : 'vi';
+  document.documentElement.lang = lang;
+  try { localStorage.setItem('lang', lang); } catch (e) { /* private mode: only the first paint is affected */ }
+}
+try { setLang(localStorage.getItem('lang')); } catch (e) { /* keep the default */ }
+const t = (key, ...args) => TEXT[key][lang === 'en' ? 1 : 0].replace(/\{(\d)\}/g, (_, i) => args[i]);
+const fmtMin = (sec) => { const m = Math.round(sec / 60); return m >= 60 ? t('hm', Math.floor(m / 60), m % 60) : t('m', m); };
 
 let token = localStorage.getItem('token') || '';
 let state = null;      // last server state
@@ -119,17 +204,18 @@ function logout() {
 
 async function renderLogin(message = '') {
   const status = await fetch('/api/status').then((r) => r.json()).catch(() => ({ hasPin: true }));
+  if (status.lang) setLang(status.lang);
   $('#app').innerHTML = `
     <h1>Kids TV</h1>
     <div class="card">
       ${status.hasPin ? `
-        <p class="muted" style="margin-top:0">Nhập mã PIN của ba mẹ để quản lý TV.</p>
+        <p class="muted" style="margin-top:0">${t('loginHint')}</p>
         <form id="login">
-          <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Mã PIN" id="pin" autocomplete="off">
+          <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="${t('pin')}" id="pin" autocomplete="off">
           <div class="error" id="err">${esc(message)}</div>
-          <button class="primary block">Đăng nhập</button>
+          <button class="primary block">${t('login')}</button>
         </form>` : `
-        <p style="margin:0">Chưa có mã PIN. Hãy tạo mã PIN trên màn hình TV trước, rồi tải lại trang này.</p>`}
+        <p style="margin:0">${t('noPin')}</p>`}
     </div>`;
   const form = $('#login');
   if (!form) return;
@@ -140,7 +226,7 @@ async function renderLogin(message = '') {
       token = out.token; localStorage.setItem('token', token); start();
     } catch (err) {
       const wait = err.data && err.data.lockoutSec;
-      $('#err').textContent = wait ? `Sai quá nhiều lần, thử lại sau ${wait} giây.` : 'Sai mã PIN.';
+      $('#err').textContent = wait ? t('tooMany', wait) : t('wrongPin');
       $('#pin').value = '';
     }
   };
@@ -148,6 +234,7 @@ async function renderLogin(message = '') {
 
 function accept(next) {
   state = next;
+  if (state.lang) setLang(state.lang);
   if (!dirty) draft = JSON.parse(JSON.stringify(state.profiles));
   if (!draft.some((p) => p.id === editing)) editing = state.active;
 }
@@ -158,7 +245,7 @@ async function refresh() {
 
 async function act(body) {
   try { accept(await api('/api/action', body)); render(); return true; }
-  catch (e) { alert('Không thực hiện được: ' + e.message); return false; }
+  catch (e) { alert(t('actFail') + e.message); return false; }
 }
 
 function start() {
@@ -178,8 +265,8 @@ function render() {
   const used = (state.days[state.today] || {})[active.id] || 0;
   const limit = active.dailyLimitMin * 60;
   const extraLeft = Math.max(0, Math.round((state.overrideUntil - state.now) / 60000));
-  const lockText = { paused: 'Đang tạm dừng', bedtime: 'Giờ đi ngủ', quota: 'Hết giờ hôm nay' }[state.lock];
-  const watching = state.current && state.current !== 'com.kidstv.launcher' ? label(state.current) : 'Màn hình chính';
+  const lockText = { paused: t('lockPaused'), bedtime: t('lockBedtime'), quota: t('lockQuota') }[state.lock];
+  const watching = state.current && state.current !== 'com.kidstv.launcher' ? label(state.current) : t('homeScreen');
   const p = draft.find((x) => x.id === editing);
   const todayApps = (state.todayApps[active.id]) || {};
   const topApps = Object.entries(todayApps).sort((a, b) => b[1] - a[1]).slice(0, 5);
@@ -193,96 +280,94 @@ function render() {
 
   $('#app').innerHTML = `
     <h1>Kids TV</h1>
-    ${state.guardRunning ? '' : `<div class="card" style="background:var(--warn);color:#fff">Dịch vụ khóa trên TV chưa chạy, các giới hạn hiện không có hiệu lực.</div>`}
+    ${state.guardRunning ? '' : `<div class="card" style="background:var(--warn);color:#fff">${t('guardOff')}</div>`}
 
     <div class="seg maintabs" id="maintabs">
-      ${[['control', 'Điều khiển'], ['manage', 'Quản lý'], ['report', 'Báo cáo']].map(([id, name]) => `<button data-tab="${id}" class="${tab === id ? 'on' : ''}">${name}</button>`).join('')}
+      ${[['control', t('tabControl')], ['manage', t('tabManage')], ['report', t('tabReport')]].map(([id, name]) => `<button data-tab="${id}" class="${tab === id ? 'on' : ''}">${name}</button>`).join('')}
     </div>
 
     <section ${pane('control')}>
-      ${state.parent ? `<div class="card"><div class="row" style="border:0;padding:0"><div class="grow">TV đang ở chế độ ba mẹ<div class="muted">Mọi ứng dụng đang mở khóa và không tính giờ.</div></div><button id="relock">Khóa lại</button></div></div>` : ''}
+      ${state.parent ? `<div class="card"><div class="row" style="border:0;padding:0"><div class="grow">${t('parentOn')}<div class="muted">${t('parentOnHint')}</div></div><button id="relock">${t('relock')}</button></div></div>` : ''}
 
       <div class="card">
         <div class="row">
           <div class="grow">
-            <div class="muted">Đang xem: ${esc(active.name)}</div>
-            <div class="big">${state.awake ? esc(watching) : 'TV đang tắt màn hình'}</div>
+            <div class="muted">${t('watching', esc(active.name))}</div>
+            <div class="big">${state.awake ? esc(watching) : t('screenOff')}</div>
           </div>
-          <span class="badge ${state.lock ? 'stop' : extraLeft ? 'warn' : ''}">${lockText || (extraLeft ? `Thêm giờ: còn ${extraLeft}′` : 'Đang cho phép')}</span>
+          <span class="badge ${state.lock ? 'stop' : extraLeft ? 'warn' : ''}">${lockText || (extraLeft ? t('extraLeft', extraLeft) : t('allowed'))}</span>
         </div>
         <div class="row" style="display:block">
-          <div class="muted">Hôm nay đã xem ${fmtMin(used)}${limit ? ` / ${fmtMin(limit)}` : ' (không giới hạn)'}</div>
+          <div class="muted">${t('usedToday', fmtMin(used))}${limit ? ` / ${fmtMin(limit)}` : t('noLimit')}</div>
           <div class="bar"><i style="width:${limit ? Math.min(100, used / limit * 100) : 0}%;background:${limit && used >= limit ? 'var(--danger)' : 'var(--accent)'}"></i></div>
         </div>
         <div class="row" style="display:block">
-          ${state.awake ? '' : '<button class="block ok" id="wake" style="margin-bottom:8px">Bật TV</button>'}
-          <button class="block ${state.paused ? 'ok' : 'danger'}" id="pause">${state.paused ? 'Cho xem tiếp' : 'Tạm dừng TV ngay'}</button>
+          ${state.awake ? '' : `<button class="block ok" id="wake" style="margin-bottom:8px">${t('wake')}</button>`}
+          <button class="block ${state.paused ? 'ok' : 'danger'}" id="pause">${state.paused ? t('resume') : t('pauseNow')}</button>
           <div class="buttons" style="margin-top:8px">
-            <button data-extra="15">+15 phút</button>
-            <button data-extra="30">+30 phút</button>
-            <button data-extra="60">+60 phút</button>
-            ${extraLeft ? '<button data-extra="0">Hủy thêm giờ</button>' : ''}
+            ${[15, 30, 60].map((m) => `<button data-extra="${m}">${t('plusMin', m)}</button>`).join('')}
+            ${extraLeft ? `<button data-extra="0">${t('cancelExtra')}</button>` : ''}
           </div>
         </div>
       </div>
 
-      <h2>Ứng dụng trên TV</h2>
+      <h2>${t('appsOnTv')}</h2>
       <div class="card">
         <div class="row">
           ${appOpen ? `<img class="appicon" src="/api/icon?pkg=${encodeURIComponent(state.current)}&token=${token}" alt="">
-            <div class="grow"><div class="muted">Đang mở</div>${esc(watching)}</div>
-            <button class="danger" id="close">Tắt ứng dụng</button>`
-            : `<div class="grow muted">Không có ứng dụng nào đang mở.</div>
-            ${state.awake ? '<button id="home">Về màn hình chính</button>' : ''}`}
+            <div class="grow"><div class="muted">${t('openNow')}</div>${esc(watching)}</div>
+            <button class="danger" id="close">${t('closeApp')}</button>`
+            : `<div class="grow muted">${t('noAppOpen')}</div>
+            ${state.awake ? `<button id="home">${t('goHome')}</button>` : ''}`}
         </div>
-        ${appOpen ? '<div class="row" style="display:block"><button class="block" id="home">Về màn hình chính (không tắt ứng dụng)</button></div>' : ''}
+        ${appOpen ? `<div class="row" style="display:block"><button class="block" id="home">${t('goHomeKeep')}</button></div>` : ''}
         <div class="row" style="display:block">
-          <div class="muted">Mở nhanh${state.parent ? '' : ` (ứng dụng của ${esc(active.name)})`}</div>
+          <div class="muted">${t('quick')}${state.parent ? '' : t('quickOf', esc(active.name))}</div>
           ${quickApps.length ? `<div class="quick">${quickApps.map((a) => `
             <button class="tile" data-launch="${esc(a.pkg)}"><img class="appicon" loading="lazy" src="/api/icon?pkg=${encodeURIComponent(a.pkg)}&token=${token}" alt=""><span>${esc(a.label)}</span></button>`).join('')}</div>`
-            : '<div class="muted" style="margin-top:8px">Hồ sơ này chưa được phép ứng dụng nào.</div>'}
+            : `<div class="muted" style="margin-top:8px">${t('noAllowed')}</div>`}
         </div>
         <div class="row" style="display:block">
-          <div class="muted" style="margin-bottom:8px">Phát video YouTube trên TV</div>
+          <div class="muted" style="margin-bottom:8px">${t('ytTitle')}</div>
           <form id="ytform" style="display:flex;gap:8px">
-            <input type="text" id="yturl" placeholder="Dán link YouTube" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-            <button class="primary" style="flex:none">Phát</button>
+            <input type="text" id="yturl" placeholder="${t('ytPaste')}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <button class="primary" style="flex:none">${t('play')}</button>
           </form>
         </div>
       </div>
 
-      <h2>Ai đang xem</h2>
+      <h2>${t('who')}</h2>
       <div class="card">
         <div class="seg" id="who">
           ${state.profiles.map((x) => `<button data-id="${esc(x.id)}" class="${x.id === state.active ? 'on' : ''}">${esc(x.name)}</button>`).join('')}
         </div>
       </div>
 
-      <h2>${sleepLeft ? `TV sẽ tắt sau khoảng ${sleepLeft} phút` : 'Hẹn giờ tắt TV'}</h2>
+      <h2>${sleepLeft ? t('sleepIn', sleepLeft) : t('sleepTitle')}</h2>
       <div class="card">
         <div class="buttons">
-          ${[1, 5, 10, 15, 30, 60].map((m) => `<button data-sleep="${m}">${m} phút</button>`).join('')}
-          ${sleepLeft ? '<button data-sleep="0">Hủy hẹn giờ</button>' : ''}
+          ${[1, 5, 10, 15, 30, 60].map((m) => `<button data-sleep="${m}">${t('m', m)}</button>`).join('')}
+          ${sleepLeft ? `<button data-sleep="0">${t('cancelSleep')}</button>` : ''}
         </div>
       </div>
     </section>
 
     <section ${pane('manage')}>
-      <h2>Cài đặt hồ sơ</h2>
+      <h2>${t('profileSettings')}</h2>
       <div class="card">
         <div class="seg" id="tabs" style="margin-bottom:14px">
           ${draft.map((x) => `<button data-id="${esc(x.id)}" class="${x.id === editing ? 'on' : ''}">${esc(x.name)}</button>`).join('')}
         </div>
-        <div class="row"><div class="grow">Tên</div><input type="text" class="short" id="f-name" maxlength="16" value="${esc(p.name)}">
+        <div class="row"><div class="grow">${t('name')}</div><input type="text" class="short" id="f-name" maxlength="16" value="${esc(p.name)}">
           <input type="color" id="f-color" value="${esc(p.color)}"></div>
-        <div class="row"><div class="grow">Giới hạn mỗi ngày<div class="muted">Số phút, 0 là không giới hạn</div></div>
+        <div class="row"><div class="grow">${t('dailyLimit')}<div class="muted">${t('dailyHint')}</div></div>
           <input type="number" class="short" id="f-limit" min="0" max="1440" inputmode="numeric" value="${p.dailyLimitMin}"></div>
-        <div class="row"><div class="grow">Giờ đi ngủ<div class="muted">Để trống cả hai nếu không dùng</div></div>
+        <div class="row"><div class="grow">${t('bedtime')}<div class="muted">${t('bedHint')}</div></div>
           <input type="time" class="short" id="f-bedStart" value="${esc(p.bedStart)}">
           <input type="time" class="short" id="f-bedEnd" value="${esc(p.bedEnd)}"></div>
       </div>
 
-      <h2>Ứng dụng được phép cho ${esc(p.name)}</h2>
+      <h2>${t('allowedFor', esc(p.name))}</h2>
       <div class="card" id="apps">
         ${state.apps.map((a) => `
           <div class="row"><img class="appicon" loading="lazy" src="/api/icon?pkg=${encodeURIComponent(a.pkg)}&token=${token}" alt="">
@@ -291,38 +376,46 @@ function render() {
       </div>
 
       <div class="savebar" ${dirty ? '' : 'hidden'}>
-        <div class="buttons"><button id="discard">Bỏ thay đổi</button><button class="primary" id="save">Lưu thay đổi</button></div>
+        <div class="buttons"><button id="discard">${t('discard')}</button><button class="primary" id="save">${t('save')}</button></div>
       </div>
 
-      <h2>Bảo mật</h2>
+      <h2>${t('security')}</h2>
       <div class="card">
         <div class="row">
-          <div class="grow">Đổi hồ sơ trên TV cần mã PIN</div>
+          <div class="grow">${t('switchLocked')}</div>
           <label class="switch"><input type="checkbox" id="switchLocked" ${state.switchLocked ? 'checked' : ''}><span></span></label>
         </div>
         <div class="row" style="display:block">
           <form id="pinform">
-            <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Mã PIN hiện tại" id="curpin" autocomplete="off">
-            <input type="password" inputmode="numeric" pattern="[0-9]*" minlength="4" maxlength="8" placeholder="Mã PIN mới (4–8 số)" id="newpin" autocomplete="off" style="margin-top:8px">
-            <button class="block" style="margin-top:8px">Đổi PIN</button>
+            <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="${t('curPin')}" id="curpin" autocomplete="off">
+            <input type="password" inputmode="numeric" pattern="[0-9]*" minlength="4" maxlength="8" placeholder="${t('newPin')}" id="newpin" autocomplete="off" style="margin-top:8px">
+            <button class="block" style="margin-top:8px">${t('changePin')}</button>
           </form>
         </div>
         <div class="row" style="display:block">
-          <button class="block" id="logout" style="color:var(--danger)">Đăng xuất</button>
+          <button class="block" id="logout" style="color:var(--danger)">${t('logout')}</button>
         </div>
+      </div>
+
+      <h2>${t('language')}</h2>
+      <div class="card">
+        <div class="seg" id="langs">
+          ${[['vi', 'Tiếng Việt'], ['en', 'English']].map(([id, name]) => `<button data-lang="${id}" class="${lang === id ? 'on' : ''}">${name}</button>`).join('')}
+        </div>
+        <div class="muted" style="margin-top:10px">${t('languageHint')}</div>
       </div>
     </section>
 
     <section ${pane('report')}>
-      <h2>Hôm nay ${esc(active.name)} xem gì</h2>
+      <h2>${t('todayWhat', esc(active.name))}</h2>
       <div class="card">
         ${topApps.length ? topApps.map(([pkg, sec]) => `
           <div class="row"><img class="appicon" src="/api/icon?pkg=${encodeURIComponent(pkg)}&token=${token}" alt="">
           <div class="grow">${esc(label(pkg))}</div><div class="muted">${fmtMin(sec)}</div></div>`).join('')
-          : '<div class="muted">Chưa xem gì hôm nay.</div>'}
+          : `<div class="muted">${t('nothingToday')}</div>`}
       </div>
 
-      <h2>7 ngày qua</h2>
+      <h2>${t('last7')}</h2>
       <div class="card">
         <div class="chart">
           ${days.map((d) => `<div class="day"><div class="cols">
@@ -330,7 +423,7 @@ function render() {
           </div><small>${d.slice(8)}/${d.slice(5, 7)}</small></div>`).join('')}
         </div>
         <div class="legend">${state.profiles.map((x) => `<span><i style="background:${esc(x.color)}"></i>${esc(x.name)}</span>`).join('')}
-          <span>Cao nhất: ${fmtMin(peak)}</span></div>
+          <span>${t('peak', fmtMin(peak))}</span></div>
       </div>
     </section>`;
 
@@ -353,9 +446,10 @@ function render() {
   };
   document.querySelectorAll('[data-launch]').forEach((b) => (b.onclick = () => act({ type: 'launch', pkg: b.dataset.launch })));
   document.querySelectorAll('[data-extra]').forEach((b) => (b.onclick = () => act({ type: 'extra', minutes: +b.dataset.extra })));
+  document.querySelectorAll('#langs button').forEach((b) => (b.onclick = () => act({ type: 'lang', lang: b.dataset.lang })));
   document.querySelectorAll('#who button').forEach((b) => (b.onclick = () => act({ type: 'profile', id: b.dataset.id })));
   $('#switchLocked').onchange = async (e) => {
-    try { accept(await api('/api/policy', { switchLocked: e.target.checked })); } catch (err) { alert('Không lưu được: ' + err.message); }
+    try { accept(await api('/api/policy', { switchLocked: e.target.checked })); } catch (err) { alert(t('saveFail') + err.message); }
     render();
   };
   document.querySelectorAll('#tabs button').forEach((b) => (b.onclick = () => { editing = b.dataset.id; render(); }));
@@ -371,21 +465,21 @@ function render() {
   }));
   $('#discard').onclick = () => { dirty = false; accept(state); render(); };
   $('#save').onclick = async () => {
-    for (const x of draft) x.name = x.name.trim() || 'Bé';
+    for (const x of draft) x.name = x.name.trim() || t('kid');
     try { const next = await api('/api/policy', { profiles: draft }); dirty = false; accept(next); render(); }
-    catch (err) { alert('Không lưu được: ' + err.message); }
+    catch (err) { alert(t('saveFail') + err.message); }
   };
   $('#pinform').onsubmit = async (e) => {
     e.preventDefault();
     const pin = $('#newpin').value;
     const current = $('#curpin').value;
-    if (!current) return alert('Hãy nhập mã PIN hiện tại.');
-    if (!/^\d{4,8}$/.test(pin)) return alert('Mã PIN mới cần 4 đến 8 chữ số.');
+    if (!current) return alert(t('needCur'));
+    if (!/^\d{4,8}$/.test(pin)) return alert(t('newPinRule'));
     try {
       const out = await api('/api/action', { type: 'pin', pin, current });
       token = out.token; localStorage.setItem('token', token); accept(out); render();
-      alert('Đã đổi mã PIN. Các thiết bị khác cần đăng nhập lại.');
-    } catch (err) { alert('Không đổi được: ' + err.message); }
+      alert(t('pinChanged'));
+    } catch (err) { alert(t('pinFail') + err.message); }
   };
   $('#logout').onclick = logout;
 }

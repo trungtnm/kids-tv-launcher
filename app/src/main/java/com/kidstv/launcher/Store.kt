@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -43,7 +44,7 @@ data class Profile(
             val allowed = (0 until arr.length()).map { arr.getString(it) }.toMutableSet()
             return Profile(
                 id = o.getString("id"),
-                name = o.optString("name", "Bé").trim().take(24).ifEmpty { "Bé" },
+                name = o.optString("name").trim().take(24).ifEmpty { S.KID.text() },
                 color = o.optString("color", "#5B8DEF"),
                 allowed = allowed,
                 dailyLimitMin = o.optInt("dailyLimitMin", 0).coerceIn(0, 24 * 60),
@@ -71,6 +72,10 @@ object Store {
 
     /** Bumped on every change so Compose screens recompose. */
     val version = mutableIntStateOf(0)
+
+    /** Language of the TV screens and the web page: "vi" or "en". Compose state, so screens follow a change at once. */
+    val lang = mutableStateOf("vi")
+    private val LANGS = setOf("vi", "en")
 
     private lateinit var app: Context
     private lateinit var policyFile: File
@@ -100,10 +105,13 @@ object Store {
         policyFile = File(app.filesDir, "policy.json")
         usageFile = File(app.filesDir, "usage.json")
         val o = runCatching { JSONObject(policyFile.readText()) }.getOrNull()
+        // Until the parents choose, follow the language the box itself is set to.
+        lang.value = o?.optString("lang")?.takeIf { it in LANGS }
+            ?: if (Locale.getDefault().language == "vi") "vi" else "en"
         if (o == null) {
             profiles = mutableListOf(
-                Profile("small", "Bé nhỏ", "#FF9F0A", mutableSetOf(), 60, "19:30", "07:00"),
-                Profile("big", "Bé lớn", "#30B0C7", mutableSetOf(), 90, "20:30", "06:30"),
+                Profile("small", S.LITTLE_ONE.text(), "#FF9F0A", mutableSetOf(), 60, "19:30", "07:00"),
+                Profile("big", S.BIG_KID.text(), "#30B0C7", mutableSetOf(), 90, "20:30", "06:30"),
             )
             activeId = "small"
             savePolicy()
@@ -123,6 +131,14 @@ object Store {
         usage = runCatching { JSONObject(usageFile.readText()) }.getOrDefault(JSONObject())
     }
 
+    @Synchronized
+    fun setLang(code: String): Boolean {
+        if (code !in LANGS) return false
+        lang.value = code
+        savePolicy()
+        return true
+    }
+
     private fun savePolicy() {
         val o = JSONObject()
             .put("pinSalt", pinSalt).put("pinHash", pinHash)
@@ -133,6 +149,7 @@ object Store {
             .put("paused", paused)
             .put("overrideUntil", overrideUntil)
             .put("sleepAt", sleepAt)
+            .put("lang", lang.value)
         writeAtomic(policyFile, o.toString())
         version.intValue++
     }
@@ -316,12 +333,12 @@ object Store {
     @Synchronized
     fun timeLock(): Verdict.Block? {
         if (parentActive()) return null
-        if (paused) return Verdict.Block("paused", "Ba mẹ đã tạm dừng TV")
+        if (paused) return Verdict.Block("paused", S.PAUSED.text())
         val p = active() ?: return null
         if (System.currentTimeMillis() < overrideUntil) return null
-        if (inBedtime(p)) return Verdict.Block("bedtime", "Đến giờ đi ngủ rồi")
+        if (inBedtime(p)) return Verdict.Block("bedtime", S.BEDTIME.text())
         if (p.dailyLimitMin > 0 && usedSec(p.id) >= p.dailyLimitMin * 60) {
-            return Verdict.Block("quota", "Hôm nay con đã xem đủ giờ rồi")
+            return Verdict.Block("quota", S.QUOTA.text())
         }
         return null
     }
@@ -341,8 +358,8 @@ object Store {
     fun decide(pkg: String): Verdict {
         if (pkg == app.packageName || isSystemSurface(pkg) || parentActive()) return Verdict.Allow
         timeLock()?.let { return it }
-        val p = active() ?: return Verdict.Block("app", "Chưa có hồ sơ nào")
-        if (pkg !in p.allowed) return Verdict.Block("app", "Ứng dụng này cần ba mẹ mở khóa")
+        val p = active() ?: return Verdict.Block("app", S.NO_PROFILE.text())
+        if (pkg !in p.allowed) return Verdict.Block("app", S.APP_LOCKED.text())
         return Verdict.Allow
     }
 
@@ -375,6 +392,7 @@ object Store {
             .put("lock", timeLock()?.kind ?: "")
             .put("guardRunning", GuardService.running)
             .put("parent", parentActive())
+            .put("lang", lang.value)
             .put("awake", (app.getSystemService(Context.POWER_SERVICE) as PowerManager).isInteractive)
     }
 }

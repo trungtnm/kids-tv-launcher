@@ -137,7 +137,7 @@ class LauncherActivity : ComponentActivity() {
                     color = TextPrimary, fontSize = 46.sp, fontWeight = FontWeight.Light,
                 )
                 Text(
-                    SimpleDateFormat("EEEE, d MMMM", Locale("vi")).format(date).replaceFirstChar { it.uppercase() },
+                    SimpleDateFormat("EEEE, d MMMM", Locale(Store.lang.value)).format(date).replaceFirstChar { it.uppercase() },
                     color = TextSecondary, fontSize = 16.sp,
                 )
             }
@@ -147,15 +147,15 @@ class LauncherActivity : ComponentActivity() {
                     val url = remember { adminUrl() }
                     if (url != null) QrCode(url, 92.dp)
                     Column {
-                        Text("Quét mã để quản lý trên điện thoại", color = TextPrimary, fontSize = 15.sp)
-                        Text(url ?: "TV chưa kết nối mạng", color = TextSecondary, fontSize = 14.sp)
+                        Text(S.SCAN_QR.text(), color = TextPrimary, fontSize = 15.sp)
+                        Text(url ?: S.NO_NETWORK.text(), color = TextSecondary, fontSize = 14.sp)
                     }
-                    if (!GuardService.running) Text("⚠ Dịch vụ khóa chưa bật", color = Color(0xFFFFD60A), fontSize = 14.sp)
-                    Pill("Khóa lại", onClick = { Store.endParent() })
+                    if (!GuardService.running) Text(S.GUARD_OFF.text(), color = Color(0xFFFFD60A), fontSize = 14.sp)
+                    Pill(S.LOCK_AGAIN.text(), onClick = { Store.endParent() })
                 } else {
                     val left = Store.remainingMin()
-                    if (left != null) Text("Còn $left phút hôm nay", color = TextSecondary, fontSize = 15.sp)
-                    Pill("Ba mẹ", onClick = { askParent() })
+                    if (left != null) Text(S.MINUTES_LEFT.text(left), color = TextSecondary, fontSize = 15.sp)
+                    Pill(S.PARENTS.text(), onClick = { askParent() })
                 }
                 FocusCard(onClick = { showProfiles = true }, shape = CircleShape, focusedScale = 1.12f) {
                     Avatar(if (parent) "★" else profile?.name ?: "?", parseColor(profile?.color ?: ""), 46.dp)
@@ -172,7 +172,7 @@ class LauncherActivity : ComponentActivity() {
         }
         val shown = remember(all, parent, profile) {
             // Most TV firmwares list Settings as an app; add a tile only when this one does not.
-            if (parent) all + listOfNotNull(AppInfo(SETTINGS_TILE, "Cài đặt").takeIf { all.none { a -> a.pkg == "com.android.tv.settings" } })
+            if (parent) all + listOfNotNull(AppInfo(SETTINGS_TILE, S.SETTINGS.text()).takeIf { all.none { a -> a.pkg == "com.android.tv.settings" } })
             else all.filter { it.pkg in (profile?.allowed ?: emptySet()) }
         }
         if (shown.isEmpty()) {
@@ -184,7 +184,7 @@ class LauncherActivity : ComponentActivity() {
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    "Chưa có ứng dụng nào được phép. Ba mẹ thêm trên điện thoại nhé.",
+                    S.NO_APPS.text(),
                     color = TextSecondary, fontSize = 20.sp,
                 )
                 if (url != null) {
@@ -278,7 +278,7 @@ class LauncherActivity : ComponentActivity() {
             Text(lock.reason, color = TextPrimary, fontSize = 34.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(30.dp))
             Pill(
-                "Ba mẹ mở khóa",
+                S.PARENT_UNLOCK.text(),
                 onClick = { startActivity(LockActivity.intent(this@LauncherActivity, lock.kind, lock.reason)) },
                 focusRequester = focus,
             )
@@ -295,7 +295,7 @@ class LauncherActivity : ComponentActivity() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Text("Ai đang xem?", color = TextPrimary, fontSize = 38.sp, fontWeight = FontWeight.SemiBold)
+            Text(S.WHO_IS_WATCHING.text(), color = TextPrimary, fontSize = 38.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(44.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(44.dp)) {
                 profiles.forEachIndexed { i, p ->

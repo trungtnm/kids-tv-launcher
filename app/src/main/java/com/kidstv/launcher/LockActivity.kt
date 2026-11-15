@@ -91,17 +91,17 @@ class LockActivity : ComponentActivity() {
 
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             when (stage) {
-                "setup" -> PinPad(if (firstPin == null) "Tạo mã PIN cho ba mẹ (4–8 số)" else "Nhập lại mã PIN") { pin ->
+                "setup" -> PinPad(if (firstPin == null) S.PIN_CREATE.text() else S.PIN_REPEAT.text()) { pin ->
                     val earlier = firstPin
                     when {
-                        !Store.validPinFormat(pin) -> "Mã PIN cần 4 đến 8 chữ số"
+                        !Store.validPinFormat(pin) -> S.PIN_FORMAT.text()
                         earlier == null -> { firstPin = pin; null }
-                        earlier != pin -> { firstPin = null; "Hai lần nhập không khớp, hãy tạo lại" }
+                        earlier != pin -> { firstPin = null; S.PIN_MISMATCH.text() }
                         else -> { Store.setPin(pin); Store.startParent(); finish(); null }
                     }
                 }
 
-                "pin" -> PinPad("Nhập mã PIN của ba mẹ") { pin ->
+                "pin" -> PinPad(S.PIN_ENTER.text()) { pin ->
                     if (Store.checkPin(pin)) {
                         if (kind == "paused" || kind == "bedtime" || kind == "quota") {
                             stage = "choices"
@@ -112,7 +112,7 @@ class LockActivity : ComponentActivity() {
                         null
                     } else {
                         val wait = Store.pinLockoutSec()
-                        if (wait > 0) "Sai quá nhiều lần, thử lại sau $wait giây" else "Sai mã PIN"
+                        if (wait > 0) S.PIN_LOCKOUT.text(wait) else S.PIN_WRONG.text()
                     }
                 }
 
@@ -134,18 +134,18 @@ class LockActivity : ComponentActivity() {
             Spacer(Modifier.height(10.dp))
             Text(
                 when (kind) {
-                    "bedtime" -> "Chúc con ngủ ngon. Mai mình xem tiếp nhé!"
-                    "quota" -> "Mình nghỉ mắt và chơi trò khác nhé!"
-                    "paused" -> "Chờ ba mẹ một chút nhé."
-                    else -> "Con nhờ ba mẹ mở giúp nhé."
+                    "bedtime" -> S.HINT_BEDTIME.text()
+                    "quota" -> S.HINT_QUOTA.text()
+                    "paused" -> S.HINT_PAUSED.text()
+                    else -> S.HINT_APP.text()
                 },
                 color = TextSecondary,
                 fontSize = 20.sp,
             )
             Spacer(Modifier.height(36.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-                Pill("Về màn hình chính", onClick = { goHome() }, focusRequester = focus)
-                Pill("Ba mẹ mở khóa", onClick = onUnlock)
+                Pill(S.GO_HOME.text(), onClick = { goHome() }, focusRequester = focus)
+                Pill(S.PARENT_UNLOCK.text(), onClick = onUnlock)
             }
         }
     }
@@ -155,21 +155,21 @@ class LockActivity : ComponentActivity() {
         val focus = remember { FocusRequester() }
         LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Ba mẹ muốn làm gì?", color = TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
+            Text(S.WHAT_NOW.text(), color = TextPrimary, fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(28.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                 if (kind == "paused") {
-                    Pill("Cho xem tiếp", onClick = { Store.setPaused(false); goHome() }, focusRequester = focus)
+                    Pill(S.RESUME.text(), onClick = { Store.setPaused(false); goHome() }, focusRequester = focus)
                 } else {
                     listOf(15, 30, 60).forEachIndexed { i, minutes ->
                         Pill(
-                            "Thêm $minutes phút",
+                            S.ADD_MINUTES.text(minutes),
                             onClick = { Store.grantExtra(minutes); goHome() },
                             focusRequester = if (i == 0) focus else null,
                         )
                     }
                 }
-                Pill("Chế độ ba mẹ", onClick = { Store.startParent(); goHome() })
+                Pill(S.PARENT_MODE.text(), onClick = { Store.startParent(); goHome() })
             }
         }
     }

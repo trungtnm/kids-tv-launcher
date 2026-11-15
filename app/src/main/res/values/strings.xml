@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Kids TV</string>
-    <string name="guard_description">Giữ cho TV chỉ mở các ứng dụng ba mẹ cho phép và tính thời gian xem.</string>
+    <string name="guard_description">Keeps the TV to the apps parents allow and counts viewing time.</string>
 </resources>
