@@ -45,8 +45,9 @@ và chỉ trong mạng Wi‑Fi nhà bạn.
 - Một Android TV box chạy Android 9 trở lên.
 - Một máy tính (Mac, Windows hoặc Linux) để cài ứng dụng lên box lần đầu.
 - Điện thoại và box dùng chung mạng Wi‑Fi nhà.
-- File cài đặt `app-release.apk`. Hiện chưa có bản dựng sẵn để tải về, nên bạn cần tự
-  dựng theo [DEVELOPMENT.md](DEVELOPMENT.md) hoặc nhờ người quen dựng giúp.
+- File cài đặt `kids-tv-launcher.apk`, tải từ mục
+  [Releases](https://github.com/trungtnm/kids-tv-launcher/releases/latest) của repo này.
+  Bạn cũng có thể tự dựng từ mã nguồn theo [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## Cài đặt
 
@@ -71,7 +72,7 @@ không; hãy chọn "Luôn cho phép" rồi bấm OK.
 
 ```sh
 adb connect <IP>:5555
-adb install -r app-release.apk
+adb install -r kids-tv-launcher.apk
 adb shell settings put secure enabled_accessibility_services com.kidstv.launcher/com.kidstv.launcher.GuardService
 adb shell settings put secure accessibility_enabled 1
 adb shell pm disable-user --user 0 com.google.android.tvlauncher
@@ -160,7 +161,7 @@ Với trẻ nhỏ thì đây là rào chắn chắc chắn. Một đứa trẻ l
 phục cài đặt gốc của box bằng nút cứng, và việc đó xóa toàn bộ thiết lập.
 
 **Cập nhật ứng dụng có mất dữ liệu không?**
-Không. Cài bản mới bằng `adb install -r app-release.apk` giữ nguyên mã PIN, hồ sơ và
+Không. Cài bản mới bằng `adb install -r kids-tv-launcher.apk` giữ nguyên mã PIN, hồ sơ và
 thời gian đã xem.
 
 ## Gỡ bỏ
