@@ -6,6 +6,24 @@ giới hạn thời gian xem, và cho ba mẹ điều khiển từ điện tho�
 
 Không cần root và không cần máy chủ bên ngoài. Mọi thứ chạy ngay trên box.
 
+## Ảnh màn hình
+
+**Trên TV** (chụp từ box thật)
+
+| Màn hình chính của một hồ sơ | Ứng dụng ngoài danh sách bị khóa |
+|---|---|
+| ![Màn hình chính](docs/screenshots/tv-home.jpg) | ![Ứng dụng bị khóa](docs/screenshots/tv-app-locked.jpg) |
+
+| Đến giờ đi ngủ | Nhập mã PIN của ba mẹ |
+|---|---|
+| ![Giờ đi ngủ](docs/screenshots/tv-bedtime.jpg) | ![Nhập mã PIN](docs/screenshots/tv-pin.jpg) |
+
+**Trên điện thoại** (trang quản lý dựng với dữ liệu mẫu)
+
+| Điều khiển | Quản lý | Báo cáo |
+|---|---|---|
+| <img src="docs/screenshots/web-control.png" width="260" alt="Tab Điều khiển"> | <img src="docs/screenshots/web-manage.png" width="260" alt="Tab Quản lý"> | <img src="docs/screenshots/web-report.png" width="260" alt="Tab Báo cáo"> |
+
 ## Tính năng
 
 **Trên TV**
