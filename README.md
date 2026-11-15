@@ -1,5 +1,7 @@
 # Kids TV Launcher
 
+**Tiếng Việt** | [English](README_EN.md)
+
 Biến Android TV box trong phòng các bé thành một chiếc TV an toàn: bé chỉ thấy những
 ứng dụng ba mẹ cho phép, xem đủ giờ thì TV tự khóa, và ba mẹ điều khiển mọi thứ từ
 điện thoại.
@@ -39,74 +41,45 @@ và chỉ trong mạng Wi‑Fi nhà bạn.
 - Điều khiển từ điện thoại: tạm dừng TV, cho thêm giờ, tắt ứng dụng đang mở, mở nhanh một
   ứng dụng, phát một video YouTube, hẹn giờ tắt và bật lại TV.
 - Xem hôm nay bé đã xem gì, bao lâu, và biểu đồ 7 ngày gần nhất.
+- Có tiếng Việt và tiếng Anh, trên cả TV lẫn điện thoại.
 
 ## Cần chuẩn bị
 
 - Một Android TV box chạy Android 9 trở lên.
-- Một máy tính (Mac, Windows hoặc Linux) để cài ứng dụng lên box lần đầu.
 - Điện thoại và box dùng chung mạng Wi‑Fi nhà.
-- File cài đặt `kids-tv-launcher.apk`, tải từ mục
-  [Releases](https://github.com/trungtnm/kids-tv-launcher/releases/latest) của repo này.
-  Bạn cũng có thể tự dựng từ mã nguồn theo [DEVELOPMENT.md](DEVELOPMENT.md).
+- Một người rành máy tính cài giúp ứng dụng lên box. Việc này chỉ làm một lần, mất khoảng
+  15 phút.
 
 ## Cài đặt
 
-Việc cài đặt chỉ làm một lần và mất khoảng 15 phút. Bạn sẽ gõ vài lệnh trên máy tính;
-không cần biết lập trình.
+**1. Nhờ cài ứng dụng lên box**
 
-**1. Bật chế độ gỡ lỗi trên box**
+Gửi cho người cài giúp đường dẫn tới trang
+[Hướng dẫn phát triển](DEVELOPMENT.md#first-install-on-a-box). Ở đó có đủ các bước và file cài
+đặt (trang viết bằng tiếng Anh). Khi họ làm xong, TV hiện màn hình "Tạo mã PIN cho ba mẹ".
 
-Trên TV, vào Cài đặt → Tùy chọn thiết bị → Giới thiệu, bấm vào dòng "Bản dựng" 7 lần.
-Quay lại, mở "Tùy chọn cho nhà phát triển" và bật "Gỡ lỗi USB" (trên một số box là
-"Gỡ lỗi qua mạng"). Ghi lại địa chỉ IP của box trong Cài đặt → Mạng, ví dụ `192.168.1.20`.
+**2. Tạo mã PIN**
 
-**2. Cài công cụ `adb` trên máy tính**
+Dùng remote nhập 4 đến 8 chữ số, bấm OK, rồi nhập lại lần nữa. Đừng để các bé thấy mã này.
 
-- Mac: `brew install android-platform-tools`
-- Windows và Linux: tải "SDK Platform-Tools" từ trang Android Developers và giải nén.
-
-**3. Cài ứng dụng lên box**
-
-Thay `<IP>` bằng địa chỉ của box. Ở lệnh đầu tiên, TV sẽ hỏi có cho phép máy tính này
-không; hãy chọn "Luôn cho phép" rồi bấm OK.
-
-```sh
-adb connect <IP>:5555
-adb install -r kids-tv-launcher.apk
-adb shell settings put secure enabled_accessibility_services com.kidstv.launcher/com.kidstv.launcher.GuardService
-adb shell settings put secure accessibility_enabled 1
-adb shell pm disable-user --user 0 com.google.android.tvlauncher
-adb shell input keyevent KEYCODE_HOME
-```
-
-Lệnh thứ năm tắt màn hình chính gốc của Google để nút Home luôn về màn hình mới. Bạn bật
-lại được bất cứ lúc nào, xem mục [Gỡ bỏ](#gỡ-bỏ).
-
-**4. Tạo mã PIN**
-
-TV sẽ hiện màn hình "Tạo mã PIN cho ba mẹ". Dùng remote nhập 4 đến 8 chữ số, bấm OK,
-rồi nhập lại lần nữa. Đừng để các bé thấy mã này.
-
-**5. Mở trang quản lý trên điện thoại**
+**3. Mở trang quản lý trên điện thoại**
 
 Trên TV, chọn nút "Ba mẹ" và nhập mã PIN: góc trên màn hình hiện một mã QR. Dùng camera
-điện thoại quét mã đó (hoặc tự gõ `http://<IP>:8765` vào trình duyệt), rồi nhập mã PIN.
-Trên iPhone, bấm Chia sẻ → "Thêm vào MH chính" để có biểu tượng như một ứng dụng.
+điện thoại quét mã đó, rồi nhập mã PIN trên điện thoại. Trên iPhone, bấm Chia sẻ → "Thêm
+vào MH chính" để có biểu tượng như một ứng dụng.
 
-**6. Thiết lập cho từng bé**
+**4. Thiết lập cho từng bé**
 
 Vào tab **Quản lý**, chọn hồ sơ, rồi đặt tên, số phút mỗi ngày, giờ đi ngủ và bật các ứng
 dụng bé được dùng. Bấm "Lưu thay đổi".
 
+Muốn đổi ngôn ngữ, kéo xuống cuối tab **Quản lý** và chọn "Tiếng Việt" hoặc "English".
+Lựa chọn này áp dụng cho cả màn hình TV và trang quản lý.
+
 ### Nên làm thêm
 
-- **Chặn trang người lớn** trong mọi ứng dụng bằng bộ lọc gia đình của Cloudflare:
-
-  ```sh
-  adb shell settings put global private_dns_specifier family.cloudflare-dns.com
-  adb shell settings put global private_dns_mode hostname
-  ```
-
+- **Chặn trang người lớn** trong mọi ứng dụng. Nhờ người cài giúp bật bộ lọc gia đình khi
+  cài ứng dụng.
 - **Gỡ trình duyệt, trình tải file và các kho ứng dụng lạ** khỏi box, vì đó là đường dẫn
   đến nội dung không phù hợp.
 - **Dùng hồ sơ trẻ em trong YouTube** nếu bé còn nhỏ. Ứng dụng này quản lý việc bé được mở
@@ -127,7 +100,7 @@ dụng bé được dùng. Bấm "Lưu thay đổi".
 | Tab | Dùng để |
 |---|---|
 | **Điều khiển** | Tạm dừng TV, cho thêm giờ, tắt hoặc mở ứng dụng, phát link YouTube, đổi bé đang xem, hẹn giờ tắt, bật lại TV |
-| **Quản lý** | Sửa hồ sơ của từng bé, chọn ứng dụng được phép, đổi mã PIN |
+| **Quản lý** | Sửa hồ sơ của từng bé, chọn ứng dụng được phép, đổi mã PIN, đổi ngôn ngữ |
 | **Báo cáo** | Xem hôm nay bé xem gì và thời gian xem trong 7 ngày |
 
 Một vài mẹo:
@@ -142,8 +115,8 @@ Một vài mẹo:
 ## Câu hỏi thường gặp
 
 **Quên mã PIN thì làm sao?**
-Gỡ ứng dụng rồi cài lại (`adb uninstall com.kidstv.launcher`, sau đó làm lại bước 3). Mã
-PIN và toàn bộ hồ sơ sẽ bị xóa, bạn thiết lập lại từ đầu.
+Ứng dụng phải được gỡ rồi cài lại; hãy nhờ người đã cài giúp. Mã PIN và toàn bộ hồ sơ sẽ
+bị xóa, bạn thiết lập lại từ đầu.
 
 **Điện thoại không mở được trang quản lý.**
 Kiểm tra điện thoại đang dùng đúng Wi‑Fi nhà, không phải 4G. Nếu vẫn không được, địa chỉ
@@ -162,26 +135,18 @@ Với trẻ nhỏ thì đây là rào chắn chắc chắn. Một đứa trẻ l
 phục cài đặt gốc của box bằng nút cứng, và việc đó xóa toàn bộ thiết lập.
 
 **Cập nhật ứng dụng có mất dữ liệu không?**
-Không. Cài bản mới bằng `adb install -r kids-tv-launcher.apk` giữ nguyên mã PIN, hồ sơ và
-thời gian đã xem.
+Không. Bản mới giữ nguyên mã PIN, hồ sơ và thời gian đã xem.
 
-## Gỡ bỏ
-
-```sh
-adb shell pm enable com.google.android.tvlauncher
-adb uninstall com.kidstv.launcher
-adb shell settings put global private_dns_mode off
-```
-
-Box trở lại màn hình chính gốc của Google.
+**Muốn gỡ ứng dụng thì sao?**
+Nhờ người đã cài giúp làm theo mục "Uninstall" trong
+[Hướng dẫn phát triển](DEVELOPMENT.md#uninstall). Box trở lại màn hình chính gốc của Google.
 
 ## Lưu ý về an toàn
 
 - Trang quản lý không mã hóa kết nối, nên chỉ dùng trong mạng nhà. Đừng mở cổng 8765 ra
   Internet.
-- Sau khi cài xong, bạn có thể tắt "Gỡ lỗi USB" trên box. Khi cần cập nhật ứng dụng thì
-  bật lại.
 
 ## Dành cho người phát triển
 
-Hướng dẫn dựng từ mã nguồn, kiến trúc và API nằm trong [DEVELOPMENT.md](DEVELOPMENT.md).
+Hướng dẫn dựng từ mã nguồn, kiến trúc và API nằm trong [DEVELOPMENT.md](DEVELOPMENT.md)
+(tiếng Anh).

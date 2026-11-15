@@ -1,51 +1,78 @@
-# Hướng dẫn phát triển
+# Development guide
 
-Tài liệu cho người muốn dựng, sửa hoặc mở rộng Kids TV Launcher. Hướng dẫn sử dụng cho
-ba mẹ nằm trong [README.md](README.md).
+For anyone who wants to build, change or extend Kids TV Launcher, and for the person
+installing it on a box. The guide for parents is [README_EN.md](README_EN.md)
+([Tiếng Việt](README.md)).
 
-## Tổng quan
+## Overview
 
-Một ứng dụng Android duy nhất (`com.kidstv.launcher`), viết bằng Kotlin và Jetpack
-Compose, không có backend. minSdk 28, targetSdk 34.
+A single Android app (`com.kidstv.launcher`) written in Kotlin and Jetpack Compose, with
+no backend. minSdk 28, targetSdk 34.
 
-| Thành phần | File | Vai trò |
+| Part | File | Role |
 |---|---|---|
-| Màn hình chính | `LauncherActivity.kt` | Lưới ứng dụng, chọn hồ sơ, trạng thái khóa theo giờ |
-| Màn hình khóa | `LockActivity.kt` | Thông báo lý do khóa, nhập và tạo mã PIN, cho thêm giờ |
-| Thành phần giao diện | `Ui.kt` | Nền, thẻ có hiệu ứng focus, nút, bàn phím số, hình minh họa màn hình khóa, mã QR (ZXing) |
-| Dịch vụ khóa | `GuardService.kt` | Accessibility service: theo dõi ứng dụng phía trước, chặn, tính giờ, hẹn giờ tắt, đánh thức |
-| Chính sách | `Store.kt` | Hồ sơ, mã PIN, phiên đăng nhập, thời gian đã xem, hàm quyết định `decide()` |
-| Danh sách ứng dụng | `Apps.kt` | Liệt kê và mở ứng dụng, lấy banner và icon |
-| Máy chủ web | `WebServer.kt` | NanoHTTPD cổng 8765, API JSON, phát trang quản lý |
-| Trang quản lý | `assets/web/index.html` | Một file HTML với JavaScript thuần, không có bước build |
+| Home screen | `LauncherActivity.kt` | App grid, profile picker, time-lock state, QR code of the admin page |
+| Lock screen | `LockActivity.kt` | Shows why the TV is locked, PIN entry and creation, granting extra time |
+| UI components | `Ui.kt` | Backdrop, focusable cards, buttons, PIN pad, lock illustrations, QR code (ZXing) |
+| Texts | `Strings.kt` | Every text shown on the TV or returned to the web page, in Vietnamese and English |
+| Guard service | `GuardService.kt` | Accessibility service: watches the foreground app, blocks, counts time, sleep timer, wake |
+| Policy | `Store.kt` | Profiles, PIN, login tokens, viewing time, language, the `decide()` function |
+| App list | `Apps.kt` | Lists and launches apps, loads banners and icons |
+| Web server | `WebServer.kt` | NanoHTTPD on port 8765, JSON API, serves the admin page |
+| Admin page | `assets/web/index.html` | One HTML file with plain JavaScript and no build step |
 
-Các file Kotlin nằm trong `app/src/main/java/com/kidstv/launcher/`.
+The Kotlin files live in `app/src/main/java/com/kidstv/launcher/`.
 
-### Luồng chặn
+### How blocking works
 
-1. Hệ thống gửi sự kiện `TYPE_WINDOW_STATE_CHANGED` cho `GuardService` mỗi khi một cửa sổ mới lên phía trước.
-2. Dịch vụ bỏ qua các bề mặt hệ thống (`Store.isSystemSurface`), ghi lại gói đang mở vào `Store.currentPkg`, rồi gọi `Store.decide(pkg)`.
-3. Nếu kết quả là `Verdict.Block`, dịch vụ mở `LockActivity` đè lên. Với khóa theo giờ (tạm dừng, giờ ngủ, hết hạn mức), ứng dụng bị chặn còn bị đóng để dừng phát.
-4. Một bộ đếm 15 giây cộng thời gian xem cho hồ sơ đang dùng và kiểm tra lại chính sách. Các lệnh từ trang web gọi `recheck()` để áp dụng ngay, không chờ bộ đếm.
+1. The system sends `TYPE_WINDOW_STATE_CHANGED` to `GuardService` whenever a new window
+   comes to the front.
+2. The service ignores system surfaces (`Store.isSystemSurface`), records the package in
+   `Store.currentPkg`, then calls `Store.decide(pkg)`.
+3. On `Verdict.Block`, the service opens `LockActivity` on top. For time locks (pause,
+   bedtime, daily quota) the blocked app is also closed so playback stops.
+4. A 15-second tick adds viewing time to the active profile and re-checks the policy.
+   Commands from the web page call `recheck()` so they apply at once instead of waiting
+   for the tick.
 
-Thứ tự ưu tiên trong `decide()`: chế độ ba mẹ → tạm dừng → thêm giờ (`overrideUntil`) → giờ ngủ → hạn mức ngày → danh sách ứng dụng được phép.
+Order of precedence in `decide()`: parent mode → pause → extra time (`overrideUntil`) →
+bedtime → daily quota → allowed app list.
 
-### Lưu trữ
+### Storage
 
-Hai file JSON trong thư mục `files` của ứng dụng, ghi theo kiểu ghi tạm rồi đổi tên:
+Two JSON files in the app's `files` directory, written to a temporary file and renamed:
 
-- `policy.json`: salt và mã băm SHA‑256 của mã PIN, token đăng nhập, hồ sơ, hồ sơ đang dùng, cờ tạm dừng, `overrideUntil`, `sleepAt`.
-- `usage.json`: số giây đã xem theo ngày, hồ sơ và gói; giữ 14 ngày gần nhất.
+- `policy.json`: PIN salt and SHA‑256 hash, login tokens, profiles, active profile, pause
+  flag, `overrideUntil`, `sleepAt`, `lang`.
+- `usage.json`: seconds watched per day, profile and package; the last 14 days are kept.
 
-Chế độ ba mẹ chỉ nằm trong bộ nhớ và kết thúc sau 15 phút, khi màn hình tắt hoặc khi tiến trình khởi động lại.
+Parent mode lives only in memory and ends after 15 minutes, when the screen turns off,
+or when the process restarts.
 
-## Yêu cầu
+### Languages
+
+The app has its own language setting (`Store.lang`, `"vi"` or `"en"`) instead of
+following the system locale, so parents can change it from the phone and the TV follows
+immediately. Until it is set, it defaults to Vietnamese on a box whose system language
+is Vietnamese and to English otherwise.
+
+- TV texts and web error messages are entries of the `S` enum in `Strings.kt`; use
+  `S.NAME.text(args)`.
+- The admin page has its own `TEXT` table in `index.html`; use `t('key', args)`. It takes
+  the language from `/api/status` and `/api/state`.
+- When you add a text, add both languages in the same place.
+
+The only text that follows the system locale is the accessibility service description in
+`res/values/strings.xml` and `res/values-vi/strings.xml`, because Android's own Settings
+screen shows it.
+
+## Requirements
 
 - JDK 17
 - Android SDK: `platforms;android-34`, `build-tools;34.0.0`
 - `adb`
 
-Trên macOS với Homebrew:
+On macOS with Homebrew:
 
 ```sh
 brew install openjdk@17 android-platform-tools
@@ -53,7 +80,7 @@ brew install --cask android-commandlinetools
 sdkmanager "platforms;android-34" "build-tools;34.0.0"
 ```
 
-## Dựng
+## Build
 
 ```sh
 export JAVA_HOME=/opt/homebrew/opt/openjdk@17
@@ -61,137 +88,213 @@ echo "sdk.dir=/opt/homebrew/share/android-commandlinetools" > local.properties
 ./gradlew assembleRelease
 ```
 
-Kết quả nằm ở `app/build/outputs/apk/release/app-release.apk` (khoảng 1,6 MB, đã bật R8).
+The result is `app/build/outputs/apk/release/app-release.apk` (about 1.7 MB, R8 enabled).
 
-Bản release được ký bằng khóa debug của máy dựng. Điều này đủ cho việc cài tay lên thiết bị
-trong nhà, nhưng mọi bản cập nhật phải được ký bằng cùng `~/.android/debug.keystore`, nếu
-không `adb install -r` sẽ từ chối và phải gỡ ứng dụng (mất dữ liệu).
+The release build is signed with the build machine's debug key. That is enough for
+sideloading onto a device at home, but every update must be signed with the same
+`~/.android/debug.keystore`; otherwise `adb install -r` refuses it and the app has to be
+uninstalled, which loses its data.
 
-## Cài và cập nhật trên box
+## First install on a box
+
+The install file `kids-tv-launcher.apk` is on the
+[Releases](https://github.com/trungtnm/kids-tv-launcher/releases/latest) page, or build
+it as described above.
+
+**1. Turn on debugging on the box**
+
+On the TV, open Settings → Device Preferences → About and press "Build" 7 times. Go
+back, open "Developer options" and turn on "USB debugging" (on some boxes "Network
+debugging"). Note the box's IP address under Settings → Network.
+
+**2. Install `adb` on a computer**
+
+- Mac: `brew install android-platform-tools`
+- Windows and Linux: download "SDK Platform-Tools" from the Android Developers site and
+  unpack it.
+
+**3. Install the app and enable the guard service**
+
+On the first command the TV asks whether to allow this computer; choose "Always allow"
+and press OK.
+
+```sh
+adb connect <BOX_IP>:5555
+adb install -r kids-tv-launcher.apk
+adb shell settings put secure enabled_accessibility_services com.kidstv.launcher/com.kidstv.launcher.GuardService
+adb shell settings put secure accessibility_enabled 1
+adb shell pm disable-user --user 0 com.google.android.tvlauncher
+adb shell input keyevent KEYCODE_HOME
+```
+
+The fifth command disables Google's stock launcher so the Home button always lands on
+the new home screen. The TV now shows "Create a parent PIN"; the remaining steps are in
+[README_EN.md](README_EN.md#setup).
+
+**4. Turn on the family filter (recommended)**
+
+Block adult sites in every app with Cloudflare's family DNS:
+
+```sh
+adb shell settings put global private_dns_specifier family.cloudflare-dns.com
+adb shell settings put global private_dns_mode hostname
+```
+
+**5. Turn debugging off**
+
+The app does not need debugging to run; everything set above survives turning it off
+and survives reboots. Turn "USB debugging" off in "Developer options" when you are done,
+and turn it back on only to update or debug the app.
+
+## Updating on a box
 
 ```sh
 adb connect <BOX_IP>:5555
 adb install -r app/build/outputs/apk/release/app-release.apk
 ```
 
-Thiết lập lần đầu (bật accessibility service, tắt launcher gốc) được mô tả trong
-[README.md](README.md#cài-đặt). Sau `adb install -r`, hệ thống tự gắn lại accessibility
-service trong vài giây; kiểm tra bằng:
+An update keeps the PIN, profiles and viewing time. After `adb install -r` the system
+re-binds the accessibility service within a few seconds; check with:
 
 ```sh
 adb shell dumpsys accessibility | grep "Bound services"
 ```
 
-Hai điều cần biết khi cài lại:
+Two things to know when reinstalling:
 
-- Tiến trình khởi động lại nên chế độ ba mẹ đang bật sẽ kết thúc.
-- Thời gian xem chưa kịp ghi xuống đĩa (tối đa khoảng một phút) sẽ mất.
+- The process restarts, so an active parent mode ends.
+- Viewing time not yet written to disk (up to about a minute) is lost.
 
-## Gỡ lỗi
+## Uninstall
 
-Ứng dụng ghi nhật ký với thẻ `KidsTV` cho mỗi lệnh từ web, mỗi lần chặn và mỗi yêu cầu
-đánh thức:
+```sh
+adb shell pm enable com.google.android.tvlauncher
+adb uninstall com.kidstv.launcher
+adb shell settings put global private_dns_mode off
+```
+
+The box returns to Google's stock launcher. Uninstalling erases the PIN and every
+profile, so it is also how to recover from a forgotten PIN: uninstall, then install
+again from step 3 of the first install.
+
+## Debugging
+
+The app logs with the tag `KidsTV` for every web command, every block and every wake
+request:
 
 ```sh
 adb logcat -s KidsTV
 ```
 
-Các lệnh hữu ích khác:
+Other useful commands:
 
 ```sh
-# Ứng dụng đang ở phía trước
+# App in the foreground
 adb shell dumpsys activity activities | grep mResumedActivity
-# Box đang thức hay ngủ
+# Whether the box is awake or asleep
 adb shell dumpsys power | grep mWakefulness=
-# Lý do đánh thức và đi ngủ gần đây
+# Recent wake and sleep reasons
 adb logcat -d | grep -E "Waking up|Going to sleep"
-# Chụp màn hình TV
+# Capture the TV screen
 adb exec-out screencap -p > screen.png
 ```
 
-Lớp video của các ứng dụng phát phim thường chụp ra màu đen. Để biết video có đang phát
-không, dùng `adb shell dumpsys media_session`.
+The video layer of streaming apps usually captures as black. To see whether a video is
+playing, use `adb shell dumpsys media_session`.
 
-### Thử trang quản lý không cần box
+### Trying the admin page without a box
 
-`index.html` chỉ gọi `fetch` tới `/api/*`. Để xem giao diện trên máy tính, tạo một bản
-sao của file và chèn trước thẻ `<script>` đầu tiên một đoạn đặt `localStorage.token`,
-`localStorage.tab` và thay `window.fetch` bằng hàm trả về một đối tượng state mẫu. Ảnh
-trong `docs/screenshots/web-*.png` được dựng theo cách này bằng Chrome headless:
+`index.html` only calls `fetch` on `/api/*`. To view it on a computer, make a copy of
+the file and insert, before the first `<script>` tag, a snippet that sets
+`localStorage.token` and `localStorage.tab` and replaces `window.fetch` with a function
+returning a sample state object (set its `lang` to `"vi"` or `"en"`). The images
+`docs/screenshots/web-*.png` and `docs/screenshots/en/web-*.png` were rendered this way
+with headless Chrome:
 
 ```sh
 "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new \
   --force-device-scale-factor=2 --window-size=500,1190 \
-  --screenshot=out.png file:///duong/dan/toi/ban-sao.html
+  --screenshot=out.png file:///path/to/the-copy.html
 ```
 
-Chrome headless không cho cửa sổ hẹp hơn 500 px; ảnh chụp ở chiều rộng nhỏ hơn sẽ bị cắt
-bên phải chứ không phải do trang tràn ngang.
+Headless Chrome does not allow a window narrower than 500 px; a capture at a smaller
+width is cropped on the right rather than showing a page that overflows.
 
-## API của trang quản lý
+## Admin page API
 
-Mọi lệnh trừ `status` và `login` cần header `X-Token`. Thân yêu cầu là JSON mã hóa UTF‑8.
+Every call except `status` and `login` needs the `X-Token` header. Request bodies are
+UTF‑8 JSON.
 
-| Phương thức | Đường dẫn | Nội dung |
+| Method | Path | Content |
 |---|---|---|
-| GET | `/api/status` | `hasPin`, `lockoutSec` |
-| POST | `/api/login` | `{"pin": "..."}`, trả về `token` |
-| GET | `/api/state` | Hồ sơ, trạng thái khóa, ứng dụng đang mở, thời gian đã xem, danh sách ứng dụng |
-| POST | `/api/policy` | Lưu `profiles` và `switchLocked`, trả về state |
-| POST | `/api/action` | `{"type": ...}`, trả về state |
-| GET | `/api/icon?pkg=…&token=…` | Icon PNG của một ứng dụng |
+| GET | `/api/status` | `hasPin`, `lockoutSec`, `lang` |
+| POST | `/api/login` | `{"pin": "..."}`, returns `token` |
+| GET | `/api/state` | Profiles, lock state, running app, viewing time, app list, `lang` |
+| POST | `/api/policy` | Saves `profiles` and `switchLocked`, returns the state |
+| POST | `/api/action` | `{"type": ...}`, returns the state |
+| GET | `/api/icon?pkg=…&token=…` | PNG icon of an app |
 
-| `type` | Tham số | Tác dụng |
+| `type` | Parameters | Effect |
 |---|---|---|
-| `pause`, `resume` | | Tạm dừng hoặc cho xem tiếp |
-| `extra` | `minutes` | Bỏ qua hạn mức và giờ ngủ trong số phút đó; 0 để hủy |
-| `profile` | `id` | Đổi hồ sơ đang xem |
-| `lock` | | Kết thúc chế độ ba mẹ |
-| `home` | | Về màn hình chính |
-| `close` | | Về màn hình chính và đóng ứng dụng đang mở |
-| `wake` | | Đánh thức box |
-| `launch` | `pkg` | Mở một ứng dụng nếu chính sách cho phép |
-| `youtube` | `url` | Phát một video trong `com.google.android.youtube.tv` |
-| `sleep` | `minutes` | Hẹn giờ tắt; 0 để hủy |
-| `pin` | `current`, `pin` | Đổi mã PIN; thu hồi mọi token và trả về token mới |
+| `pause`, `resume` | | Pause the TV or let it continue |
+| `extra` | `minutes` | Ignore the quota and bedtime for that many minutes; 0 cancels |
+| `profile` | `id` | Switch the active profile |
+| `lock` | | End parent mode |
+| `home` | | Go to the home screen |
+| `close` | | Go to the home screen and close the running app |
+| `wake` | | Wake the box |
+| `launch` | `pkg` | Launch an app if the policy allows it |
+| `youtube` | `url` | Play a video in `com.google.android.youtube.tv` |
+| `sleep` | `minutes` | Set the sleep timer; 0 cancels |
+| `lang` | `lang` | Set the language of the TV and the admin page: `vi` or `en` |
+| `pin` | `current`, `pin` | Change the PIN; revokes every token and returns a new one |
 
-Lỗi trả về dạng `{"error": "..."}` với mã 400, 401 (token sai, trang web sẽ đăng xuất),
-403 (sai mã PIN hiện tại khi đổi PIN) hoặc 404. Nhập sai mã PIN 5 lần sẽ khóa 60 giây,
-dùng chung giữa trang web và màn hình khóa trên TV.
+Errors come back as `{"error": "..."}` with status 400, 401 (bad token; the page signs
+out), 403 (wrong current PIN when changing it) or 404. Five wrong PINs lock PIN entry
+for 60 seconds, shared between the web page and the TV lock screen.
 
-## Những điều rút ra từ thiết bị thật
+## Lessons from the real device
 
-Các quyết định dưới đây đến từ việc thử trên một box Amlogic chạy Android TV 12. Hãy giữ
-chúng khi sửa mã.
+These decisions come from testing on an Amlogic box running Android TV 12. Keep them
+when changing the code.
 
-- **Không dùng Device Owner.** Firmware không khai báo `android.software.device_admin`, và
-  hệ thống chỉ cho một người dùng nên hồ sơ hạn chế có sẵn của Android TV cũng không dùng
-  được. Mọi việc khóa dựa vào accessibility service.
-- **Phải tắt launcher gốc.** `cmd package set-home-activity` báo thành công nhưng nút Home
-  vẫn về `com.google.android.tvlauncher` cho đến khi gói đó bị tắt.
-- **Không gọi `GLOBAL_ACTION_HOME` trước khi mở màn hình khóa.** Hai thao tác chạy đua và
-  màn hình chính có thể che mất màn hình khóa. `LockActivity` tự về màn hình chính khi đóng.
-- **Đọc thân yêu cầu thành UTF‑8 bằng tay.** `parseBody` của NanoHTTPD giải mã theo
-  US‑ASCII khi header không ghi charset, làm hỏng tiếng Việt. Xem `WebServer.body()`.
-- **Đánh thức bằng `setTurnScreenOn`.** Wake lock với `ACQUIRE_CAUSES_WAKEUP` bị firmware bỏ
-  qua. `GuardService.wake()` mở `LauncherActivity` kèm `EXTRA_WAKE`, và activity tự yêu cầu
-  bật màn hình.
-- **Tắt màn hình bằng `GLOBAL_ACTION_LOCK_SCREEN`.** Trên TV không có màn hình khóa, nên
-  hành động này đưa box về chế độ ngủ. Box vẫn giữ Wi‑Fi và máy chủ web vẫn phản hồi khi ngủ.
-- **Đừng chạy `adb root`.** Trên firmware này, lệnh đó làm dịch vụ ADB ngừng hoạt động cho
-  đến khi khởi động lại box.
-- **Chỉ đưa URL đã dựng lại vào intent.** `youtubeId()` trích mã video 11 ký tự và ghép lại
-  thành link YouTube chuẩn, nên nội dung người dùng dán vào không bao giờ đi thẳng tới TV.
+- **No Device Owner.** The firmware does not declare `android.software.device_admin`,
+  and the system allows a single user, so Android TV's built-in restricted profile is
+  not available either. All locking relies on the accessibility service.
+- **The stock launcher must be disabled.** `cmd package set-home-activity` reports
+  success, but the Home button keeps going to `com.google.android.tvlauncher` until that
+  package is disabled.
+- **Do not call `GLOBAL_ACTION_HOME` before opening the lock screen.** The two race and
+  the home screen can cover the lock screen. `LockActivity` goes home by itself when it
+  closes.
+- **Read the request body as UTF‑8 by hand.** NanoHTTPD's `parseBody` decodes as
+  US‑ASCII when the header names no charset, which corrupts Vietnamese. See
+  `WebServer.body()`.
+- **Wake with `setTurnScreenOn`.** A wake lock with `ACQUIRE_CAUSES_WAKEUP` is ignored
+  by the firmware. `GuardService.wake()` starts `LauncherActivity` with `EXTRA_WAKE`, and
+  the activity asks for the screen itself.
+- **Turn the screen off with `GLOBAL_ACTION_LOCK_SCREEN`.** A TV has no lock screen, so
+  this action puts the box to sleep. The box keeps Wi‑Fi and the web server still
+  answers while asleep.
+- **Never run `adb root`.** On this firmware it stops the ADB service until the box is
+  rebooted.
+- **Only pass a rebuilt URL to an intent.** `youtubeId()` extracts the 11-character
+  video id and rebuilds a standard YouTube link, so pasted text never reaches the TV
+  directly.
 
-## Giới hạn đã biết
+## Known limits
 
-- Trang quản lý dùng HTTP không mã hóa; mã PIN và token đi dạng thô trong mạng nội bộ.
-- Token đăng nhập không hết hạn; chúng chỉ bị thu hồi khi đổi mã PIN.
-- Ứng dụng không lọc nội dung bên trong từng ứng dụng.
-- Chưa có kiểm thử tự động. Việc kiểm thử hiện làm tay trên box qua `adb` và trang web.
+- The admin page uses unencrypted HTTP; the PIN and token travel in the clear on the
+  local network.
+- Login tokens do not expire; they are revoked only when the PIN changes.
+- The app does not filter content inside individual apps.
+- A first install needs a computer and `adb`, because disabling the stock launcher can
+  only be done from a shell.
+- There are no automated tests. Testing is manual, on a box through `adb` and the web
+  page.
 
-## Quy ước
+## Conventions
 
-- Commit theo dạng conventional commits (`feat:`, `fix:`, `docs:`).
-- Không commit `local.properties`, thư mục build, hay bản sao lưu lấy từ thiết bị
-  (`device-backup/` đã nằm trong `.gitignore`).
+- Commits follow conventional commits (`feat:`, `fix:`, `docs:`).
+- Do not commit `local.properties`, build directories, or backups taken from a device
+  (`device-backup/` is already in `.gitignore`).
