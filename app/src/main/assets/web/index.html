@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kids TV">
+<meta name="theme-color" content="#0b0c12">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/app-icon.png">
+<title>Kids TV</title>
+<style>
+  :root {
+    --bg: #f2f2f7; --card: #ffffff; --text: #1c1c1e; --muted: #6e6e73; --line: #e5e5ea;
+    --accent: #0a84ff; --danger: #ff3b30; --ok: #34c759; --warn: #ff9f0a; --field: #f2f2f7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #000000; --card: #1c1c1e; --text: #f5f5f7; --muted: #98989f; --line: #2c2c2e; --field: #2c2c2e; }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Roboto, sans-serif;
+    padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 32px);
+  }
+  main { max-width: 560px; margin: 0 auto; }
+  h1 { font-size: 32px; font-weight: 700; margin: 20px 0 14px; letter-spacing: -0.5px; }
+  h2 { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; margin: 26px 4px 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); min-height: 48px; }
+  .row:last-child { border-bottom: 0; padding-bottom: 0; }
+  .row:first-child { padding-top: 0; }
+  .row > .grow { flex: 1; min-width: 0; }
+  .muted { color: var(--muted); font-size: 14px; }
+  button {
+    font: inherit; font-weight: 600; border: 0; border-radius: 12px; padding: 12px 16px;
+    background: var(--field); color: var(--accent); cursor: pointer;
+  }
+  button:active { opacity: .6; }
+  button.primary { background: var(--accent); color: #fff; }
+  button.danger { background: var(--danger); color: #fff; }
+  button.ok { background: var(--ok); color: #fff; }
+  button.block { width: 100%; }
+  .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  .buttons > button { flex: 1; min-width: 88px; }
+  input[type=text], input[type=number], input[type=time], input[type=password] {
+    font: inherit; color: var(--text); background: var(--field); border: 0; border-radius: 10px;
+    padding: 10px 12px; width: 100%; min-width: 0;
+  }
+  input[type=color] { width: 44px; height: 36px; border: 0; background: none; padding: 0; }
+  .short { max-width: 120px; }
+  .seg { display: flex; background: var(--field); border-radius: 12px; padding: 3px; gap: 3px; }
+  .seg button { flex: 1; background: transparent; color: var(--text); padding: 9px 8px; border-radius: 9px; font-weight: 500; }
+  .seg button.on { background: var(--card); box-shadow: 0 1px 4px rgba(0,0,0,.18); font-weight: 600; }
+  .switch { position: relative; width: 51px; height: 31px; flex: none; }
+  .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; z-index: 1; cursor: pointer; }
+  .switch span { position: absolute; inset: 0; border-radius: 16px; background: var(--line); transition: background .2s; }
+  .switch span::after {
+    content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%;
+    background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.25); transition: transform .2s;
+  }
+  .switch input:checked + span { background: var(--ok); }
+  .switch input:checked + span::after { transform: translateX(20px); }
+  .appicon { width: 40px; height: 40px; border-radius: 10px; background: var(--field); flex: none; object-fit: cover; }
+  .big { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+  .bar { height: 8px; border-radius: 4px; background: var(--field); overflow: hidden; margin-top: 10px; }
+  .bar > i { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 13px; font-weight: 600; color: #fff; background: var(--ok); }
+  .badge.warn { background: var(--warn); } .badge.stop { background: var(--danger); }
+  .chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding-top: 8px; }
+  .chart .day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .chart .cols { display: flex; gap: 3px; align-items: flex-end; flex: 1; width: 100%; justify-content: center; }
+  .chart .cols i { width: 10px; border-radius: 4px 4px 0 0; min-height: 2px; }
+  .chart small { color: var(--muted); font-size: 11px; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; }
+  .error { color: var(--danger); font-size: 14px; min-height: 20px; margin-top: 8px; }
+  .savebar { position: sticky; bottom: calc(env(safe-area-inset-bottom) + 12px); margin-top: 12px; z-index: 5; }
+  .savebar button { box-shadow: 0 8px 24px rgba(0,0,0,.28); }
+  .maintabs { position: sticky; top: calc(env(safe-area-inset-top) + 6px); z-index: 6; margin-bottom: 14px; background: var(--line); box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+  .quick { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 10px; margin-top: 10px; }
+  .tile { background: none; padding: 6px 2px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--text); font-weight: 500; font-size: 12px; min-width: 0; }
+  .tile .appicon { width: 52px; height: 52px; border-radius: 13px; }
+  .tile span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+const $ = (sel, root = document) => root.querySelector(sel);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtMin = (sec) => { const m = Math.round(sec / 60); return m >= 60 ? `${Math.floor(m / 60)} giờ ${m % 60} phút` : `${m} phút`; };
+
+let token = localStorage.getItem('token') || '';
+let state = null;      // last server state
+let draft = null;      // editable copy of profiles
+let dirty = false;
+let editing = '';      // profile id shown in the editor
+let timer = null;
+let tab = localStorage.getItem('tab') || 'control';
+
+async function api(path, body) {
+  const res = await fetch(path, {
+    method: body ? 'POST' : 'GET',
+    headers: Object.assign({ 'X-Token': token }, body ? { 'Content-Type': 'application/json; charset=utf-8' } : {}),
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && path !== '/api/login') { logout(); throw new Error('unauthorized'); }
+  if (!res.ok) throw Object.assign(new Error(data.error || 'error'), { data });
+  return data;
+}
+
+function logout() {
+  token = ''; localStorage.removeItem('token'); clearInterval(timer); renderLogin();
+}
+
+async function renderLogin(message = '') {
+  const status = await fetch('/api/status').then((r) => r.json()).catch(() => ({ hasPin: true }));
+  $('#app').innerHTML = `
+    <h1>Kids TV</h1>
+    <div class="card">
+      ${status.hasPin ? `
+        <p class="muted" style="margin-top:0">Nhập mã PIN của ba mẹ để quản lý TV.</p>
+        <form id="login">
+          <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Mã PIN" id="pin" autocomplete="off">
+          <div class="error" id="err">${esc(message)}</div>
+          <button class="primary block">Đăng nhập</button>
+        </form>` : `
+        <p style="margin:0">Chưa có mã PIN. Hãy tạo mã PIN trên màn hình TV trước, rồi tải lại trang này.</p>`}
+    </div>`;
+  const form = $('#login');
+  if (!form) return;
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const out = await api('/api/login', { pin: $('#pin').value });
+      token = out.token; localStorage.setItem('token', token); start();
+    } catch (err) {
+      const wait = err.data && err.data.lockoutSec;
+      $('#err').textContent = wait ? `Sai quá nhiều lần, thử lại sau ${wait} giây.` : 'Sai mã PIN.';
+      $('#pin').value = '';
+    }
+  };
+}
+
+function accept(next) {
+  state = next;
+  if (!dirty) draft = JSON.parse(JSON.stringify(state.profiles));
+  if (!draft.some((p) => p.id === editing)) editing = state.active;
+}
+
+async function refresh() {
+  try { accept(await api('/api/state')); render(); } catch (e) { /* stay on last view; next poll retries */ }
+}
+
+async function act(body) {
+  try { accept(await api('/api/action', body)); render(); return true; }
+  catch (e) { alert('Không thực hiện được: ' + e.message); return false; }
+}
+
+function start() {
+  clearInterval(timer);
+  refresh();
+  const typing = () => document.activeElement && document.activeElement.tagName === 'INPUT';
+  timer = setInterval(() => { if (!document.hidden && !dirty && !typing()) refresh(); }, 10000);
+}
+
+function label(pkg) {
+  const app = state.apps.find((a) => a.pkg === pkg);
+  return app ? app.label : pkg;
+}
+
+function render() {
+  const active = state.profiles.find((p) => p.id === state.active) || state.profiles[0];
+  const used = (state.days[state.today] || {})[active.id] || 0;
+  const limit = active.dailyLimitMin * 60;
+  const extraLeft = Math.max(0, Math.round((state.overrideUntil - state.now) / 60000));
+  const lockText = { paused: 'Đang tạm dừng', bedtime: 'Giờ đi ngủ', quota: 'Hết giờ hôm nay' }[state.lock];
+  const watching = state.current && state.current !== 'com.kidstv.launcher' ? label(state.current) : 'Màn hình chính';
+  const p = draft.find((x) => x.id === editing);
+  const todayApps = (state.todayApps[active.id]) || {};
+  const topApps = Object.entries(todayApps).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const days = Object.keys(state.days).sort();
+  const sleepLeft = state.sleepAt > state.now ? Math.ceil((state.sleepAt - state.now) / 60000) : 0;
+  const quickApps = state.parent ? state.apps : state.apps.filter((a) => active.allowed.includes(a.pkg));
+  const peak = Math.max(1, ...days.flatMap((d) => Object.values(state.days[d])));
+
+  const pane = (name) => (tab === name ? '' : 'hidden');
+  const appOpen = state.awake && state.current && state.current !== 'com.kidstv.launcher';
+
+  $('#app').innerHTML = `
+    <h1>Kids TV</h1>
+    ${state.guardRunning ? '' : `<div class="card" style="background:var(--warn);color:#fff">Dịch vụ khóa trên TV chưa chạy, các giới hạn hiện không có hiệu lực.</div>`}
+
+    <div class="seg maintabs" id="maintabs">
+      ${[['control', 'Điều khiển'], ['manage', 'Quản lý'], ['report', 'Báo cáo']].map(([id, name]) => `<button data-tab="${id}" class="${tab === id ? 'on' : ''}">${name}</button>`).join('')}
+    </div>
+
+    <section ${pane('control')}>
+      ${state.parent ? `<div class="card"><div class="row" style="border:0;padding:0"><div class="grow">TV đang ở chế độ ba mẹ<div class="muted">Mọi ứng dụng đang mở khóa và không tính giờ.</div></div><button id="relock">Khóa lại</button></div></div>` : ''}
+
+      <div class="card">
+        <div class="row">
+          <div class="grow">
+            <div class="muted">Đang xem: ${esc(active.name)}</div>
+            <div class="big">${state.awake ? esc(watching) : 'TV đang tắt màn hình'}</div>
+          </div>
+          <span class="badge ${state.lock ? 'stop' : extraLeft ? 'warn' : ''}">${lockText || (extraLeft ? `Thêm giờ: còn ${extraLeft}′` : 'Đang cho phép')}</span>
+        </div>
+        <div class="row" style="display:block">
+          <div class="muted">Hôm nay đã xem ${fmtMin(used)}${limit ? ` / ${fmtMin(limit)}` : ' (không giới hạn)'}</div>
+          <div class="bar"><i style="width:${limit ? Math.min(100, used / limit * 100) : 0}%;background:${limit && used >= limit ? 'var(--danger)' : 'var(--accent)'}"></i></div>
+        </div>
+        <div class="row" style="display:block">
+          ${state.awake ? '' : '<button class="block ok" id="wake" style="margin-bottom:8px">Bật TV</button>'}
+          <button class="block ${state.paused ? 'ok' : 'danger'}" id="pause">${state.paused ? 'Cho xem tiếp' : 'Tạm dừng TV ngay'}</button>
+          <div class="buttons" style="margin-top:8px">
+            <button data-extra="15">+15 phút</button>
+            <button data-extra="30">+30 phút</button>
+            <button data-extra="60">+60 phút</button>
+            ${extraLeft ? '<button data-extra="0">Hủy thêm giờ</button>' : ''}
+          </div>
+        </div>
+      </div>
+
+      <h2>Ứng dụng trên TV</h2>
+      <div class="card">
+        <div class="row">
+          ${appOpen ? `<img class="appicon" src="/api/icon?pkg=${encodeURIComponent(state.current)}&token=${token}" alt="">
+            <div class="grow"><div class="muted">Đang mở</div>${esc(watching)}</div>
+            <button class="danger" id="close">Tắt ứng dụng</button>`
+            : `<div class="grow muted">Không có ứng dụng nào đang mở.</div>
+            ${state.awake ? '<button id="home">Về màn hình chính</button>' : ''}`}
+        </div>
+        ${appOpen ? '<div class="row" style="display:block"><button class="block" id="home">Về màn hình chính (không tắt ứng dụng)</button></div>' : ''}
+        <div class="row" style="display:block">
+          <div class="muted">Mở nhanh${state.parent ? '' : ` (ứng dụng của ${esc(active.name)})`}</div>
+          ${quickApps.length ? `<div class="quick">${quickApps.map((a) => `
+            <button class="tile" data-launch="${esc(a.pkg)}"><img class="appicon" loading="lazy" src="/api/icon?pkg=${encodeURIComponent(a.pkg)}&token=${token}" alt=""><span>${esc(a.label)}</span></button>`).join('')}</div>`
+            : '<div class="muted" style="margin-top:8px">Hồ sơ này chưa được phép ứng dụng nào.</div>'}
+        </div>
+        <div class="row" style="display:block">
+          <div class="muted" style="margin-bottom:8px">Phát video YouTube trên TV</div>
+          <form id="ytform" style="display:flex;gap:8px">
+            <input type="text" id="yturl" placeholder="Dán link YouTube" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+            <button class="primary" style="flex:none">Phát</button>
+          </form>
+        </div>
+      </div>
+
+      <h2>Ai đang xem</h2>
+      <div class="card">
+        <div class="seg" id="who">
+          ${state.profiles.map((x) => `<button data-id="${esc(x.id)}" class="${x.id === state.active ? 'on' : ''}">${esc(x.name)}</button>`).join('')}
+        </div>
+      </div>
+
+      <h2>${sleepLeft ? `TV sẽ tắt sau khoảng ${sleepLeft} phút` : 'Hẹn giờ tắt TV'}</h2>
+      <div class="card">
+        <div class="buttons">
+          ${[1, 5, 10, 15, 30, 60].map((m) => `<button data-sleep="${m}">${m} phút</button>`).join('')}
+          ${sleepLeft ? '<button data-sleep="0">Hủy hẹn giờ</button>' : ''}
+        </div>
+      </div>
+    </section>
+
+    <section ${pane('manage')}>
+      <h2>Cài đặt hồ sơ</h2>
+      <div class="card">
+        <div class="seg" id="tabs" style="margin-bottom:14px">
+          ${draft.map((x) => `<button data-id="${esc(x.id)}" class="${x.id === editing ? 'on' : ''}">${esc(x.name)}</button>`).join('')}
+        </div>
+        <div class="row"><div class="grow">Tên</div><input type="text" class="short" id="f-name" maxlength="16" value="${esc(p.name)}">
+          <input type="color" id="f-color" value="${esc(p.color)}"></div>
+        <div class="row"><div class="grow">Giới hạn mỗi ngày<div class="muted">Số phút, 0 là không giới hạn</div></div>
+          <input type="number" class="short" id="f-limit" min="0" max="1440" inputmode="numeric" value="${p.dailyLimitMin}"></div>
+        <div class="row"><div class="grow">Giờ đi ngủ<div class="muted">Để trống cả hai nếu không dùng</div></div>
+          <input type="time" class="short" id="f-bedStart" value="${esc(p.bedStart)}">
+          <input type="time" class="short" id="f-bedEnd" value="${esc(p.bedEnd)}"></div>
+      </div>
+
+      <h2>Ứng dụng được phép cho ${esc(p.name)}</h2>
+      <div class="card" id="apps">
+        ${state.apps.map((a) => `
+          <div class="row"><img class="appicon" loading="lazy" src="/api/icon?pkg=${encodeURIComponent(a.pkg)}&token=${token}" alt="">
+          <div class="grow">${esc(a.label)}<div class="muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis">${esc(a.pkg)}</div></div>
+          <label class="switch"><input type="checkbox" data-pkg="${esc(a.pkg)}" ${p.allowed.includes(a.pkg) ? 'checked' : ''}><span></span></label></div>`).join('')}
+      </div>
+
+      <div class="savebar" ${dirty ? '' : 'hidden'}>
+        <div class="buttons"><button id="discard">Bỏ thay đổi</button><button class="primary" id="save">Lưu thay đổi</button></div>
+      </div>
+
+      <h2>Bảo mật</h2>
+      <div class="card">
+        <div class="row">
+          <div class="grow">Đổi hồ sơ trên TV cần mã PIN</div>
+          <label class="switch"><input type="checkbox" id="switchLocked" ${state.switchLocked ? 'checked' : ''}><span></span></label>
+        </div>
+        <div class="row" style="display:block">
+          <form id="pinform">
+            <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="Mã PIN hiện tại" id="curpin" autocomplete="off">
+            <input type="password" inputmode="numeric" pattern="[0-9]*" minlength="4" maxlength="8" placeholder="Mã PIN mới (4–8 số)" id="newpin" autocomplete="off" style="margin-top:8px">
+            <button class="block" style="margin-top:8px">Đổi PIN</button>
+          </form>
+        </div>
+        <div class="row" style="display:block">
+          <button class="block" id="logout" style="color:var(--danger)">Đăng xuất</button>
+        </div>
+      </div>
+    </section>
+
+    <section ${pane('report')}>
+      <h2>Hôm nay ${esc(active.name)} xem gì</h2>
+      <div class="card">
+        ${topApps.length ? topApps.map(([pkg, sec]) => `
+          <div class="row"><img class="appicon" src="/api/icon?pkg=${encodeURIComponent(pkg)}&token=${token}" alt="">
+          <div class="grow">${esc(label(pkg))}</div><div class="muted">${fmtMin(sec)}</div></div>`).join('')
+          : '<div class="muted">Chưa xem gì hôm nay.</div>'}
+      </div>
+
+      <h2>7 ngày qua</h2>
+      <div class="card">
+        <div class="chart">
+          ${days.map((d) => `<div class="day"><div class="cols">
+            ${state.profiles.map((x) => `<i title="${fmtMin(state.days[d][x.id] || 0)}" style="height:${(state.days[d][x.id] || 0) / peak * 100}%;background:${esc(x.color)}"></i>`).join('')}
+          </div><small>${d.slice(8)}/${d.slice(5, 7)}</small></div>`).join('')}
+        </div>
+        <div class="legend">${state.profiles.map((x) => `<span><i style="background:${esc(x.color)}"></i>${esc(x.name)}</span>`).join('')}
+          <span>Cao nhất: ${fmtMin(peak)}</span></div>
+      </div>
+    </section>`;
+
+  document.querySelectorAll('#maintabs button').forEach((b) => (b.onclick = () => {
+    tab = b.dataset.tab;
+    try { localStorage.setItem('tab', tab); } catch (e) { /* private mode: the tab just is not remembered */ }
+    render(); window.scrollTo(0, 0);
+  }));
+  if ($('#close')) $('#close').onclick = async () => { if (await act({ type: 'close' })) setTimeout(refresh, 2000); };
+  const touch = () => { dirty = true; $('.savebar').hidden = false; };
+  if ($('#relock')) $('#relock').onclick = () => act({ type: 'lock' });
+  $('#pause').onclick = () => act({ type: state.paused ? 'resume' : 'pause' });
+  if ($('#home')) $('#home').onclick = () => act({ type: 'home' });
+  if ($('#wake')) $('#wake').onclick = async () => { if (await act({ type: 'wake' })) setTimeout(refresh, 1500); };
+  document.querySelectorAll('[data-sleep]').forEach((b) => (b.onclick = () => act({ type: 'sleep', minutes: +b.dataset.sleep })));
+  $('#ytform').onsubmit = (e) => {
+    e.preventDefault();
+    const url = $('#yturl').value.trim();
+    if (url) act({ type: 'youtube', url });
+  };
+  document.querySelectorAll('[data-launch]').forEach((b) => (b.onclick = () => act({ type: 'launch', pkg: b.dataset.launch })));
+  document.querySelectorAll('[data-extra]').forEach((b) => (b.onclick = () => act({ type: 'extra', minutes: +b.dataset.extra })));
+  document.querySelectorAll('#who button').forEach((b) => (b.onclick = () => act({ type: 'profile', id: b.dataset.id })));
+  $('#switchLocked').onchange = async (e) => {
+    try { accept(await api('/api/policy', { switchLocked: e.target.checked })); } catch (err) { alert('Không lưu được: ' + err.message); }
+    render();
+  };
+  document.querySelectorAll('#tabs button').forEach((b) => (b.onclick = () => { editing = b.dataset.id; render(); }));
+  $('#f-name').oninput = (e) => { p.name = e.target.value; touch(); };
+  $('#f-color').oninput = (e) => { p.color = e.target.value; touch(); };
+  $('#f-limit').oninput = (e) => { p.dailyLimitMin = Math.max(0, Math.min(1440, parseInt(e.target.value, 10) || 0)); touch(); };
+  $('#f-bedStart').oninput = (e) => { p.bedStart = e.target.value; touch(); };
+  $('#f-bedEnd').oninput = (e) => { p.bedEnd = e.target.value; touch(); };
+  document.querySelectorAll('#apps input').forEach((box) => (box.onchange = () => {
+    const set = new Set(p.allowed);
+    if (box.checked) set.add(box.dataset.pkg); else set.delete(box.dataset.pkg);
+    p.allowed = [...set]; touch();
+  }));
+  $('#discard').onclick = () => { dirty = false; accept(state); render(); };
+  $('#save').onclick = async () => {
+    for (const x of draft) x.name = x.name.trim() || 'Bé';
+    try { const next = await api('/api/policy', { profiles: draft }); dirty = false; accept(next); render(); }
+    catch (err) { alert('Không lưu được: ' + err.message); }
+  };
+  $('#pinform').onsubmit = async (e) => {
+    e.preventDefault();
+    const pin = $('#newpin').value;
+    const current = $('#curpin').value;
+    if (!current) return alert('Hãy nhập mã PIN hiện tại.');
+    if (!/^\d{4,8}$/.test(pin)) return alert('Mã PIN mới cần 4 đến 8 chữ số.');
+    try {
+      const out = await api('/api/action', { type: 'pin', pin, current });
+      token = out.token; localStorage.setItem('token', token); accept(out); render();
+      alert('Đã đổi mã PIN. Các thiết bị khác cần đăng nhập lại.');
+    } catch (err) { alert('Không đổi được: ' + err.message); }
+  };
+  $('#logout').onclick = logout;
+}
+
+document.addEventListener('visibilitychange', () => { if (!document.hidden && token && !dirty) refresh(); });
+if (token) start(); else renderLogin();
+</script>
+</body>
+</html>
