@@ -2,6 +2,8 @@ package com.kidstv.launcher
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -33,6 +35,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -43,11 +46,15 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.nativeKeyCode
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.EncodeHintType
+import com.google.zxing.qrcode.QRCodeWriter
 
 val TextPrimary = Color(0xFFF5F5F7)
 val TextSecondary = Color(0x99EBEBF5)
@@ -157,6 +164,34 @@ fun Avatar(name: String, color: Color, size: Dp) {
             fontSize = (size.value * 0.42f).sp,
             fontWeight = FontWeight.SemiBold,
         )
+    }
+}
+
+/** The illustration shown to a child for each kind of lock. */
+@Composable
+fun LockArt(kind: String, size: Dp) {
+    val art = when (kind) {
+        "bedtime" -> R.drawable.ill_bedtime
+        "quota" -> R.drawable.ill_quota
+        "paused" -> R.drawable.ill_paused
+        else -> R.drawable.ill_locked
+    }
+    Image(painterResource(art), contentDescription = null, modifier = Modifier.size(size))
+}
+
+/** A QR code for [text], black on a white card so a phone camera can read it off the TV. */
+@Composable
+fun QrCode(text: String, size: Dp) {
+    val matrix = remember(text) {
+        // Asking for 0x0 yields one cell per module plus the quiet zone.
+        runCatching { QRCodeWriter().encode(text, BarcodeFormat.QR_CODE, 0, 0, mapOf(EncodeHintType.MARGIN to 3)) }.getOrNull()
+    } ?: return
+    Canvas(Modifier.size(size).clip(RoundedCornerShape(10.dp)).background(Color.White)) {
+        val cell = this.size.width / matrix.width
+        for (y in 0 until matrix.height) for (x in 0 until matrix.width) {
+            // Cells overlap by a hair so rounding never leaves light seams between modules.
+            if (matrix[x, y]) drawRect(Color.Black, Offset(x * cell, y * cell), Size(cell + 0.5f, cell + 0.5f))
+        }
     }
 }
 

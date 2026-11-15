@@ -89,8 +89,9 @@ rồi nhập lại lần nữa. Đừng để các bé thấy mã này.
 
 **5. Mở trang quản lý trên điện thoại**
 
-Mở trình duyệt trên điện thoại và vào `http://<IP>:8765`, rồi nhập mã PIN. Trên iPhone,
-bấm Chia sẻ → "Thêm vào MH chính" để có biểu tượng như một ứng dụng.
+Trên TV, chọn nút "Ba mẹ" và nhập mã PIN: góc trên màn hình hiện một mã QR. Dùng camera
+điện thoại quét mã đó (hoặc tự gõ `http://<IP>:8765` vào trình duyệt), rồi nhập mã PIN.
+Trên iPhone, bấm Chia sẻ → "Thêm vào MH chính" để có biểu tượng như một ứng dụng.
 
 **6. Thiết lập cho từng bé**
 

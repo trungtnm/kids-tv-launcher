@@ -86,6 +86,9 @@ class LauncherActivity : ComponentActivity() {
         if (!Store.hasPin()) startActivity(LockActivity.intent(this, LockActivity.KIND_PARENT, ""))
     }
 
+    /** Address of the parents' web page, or null while the box has no LAN address. */
+    private fun adminUrl(): String? = Apps.lanAddress()?.let { "http://$it:${WebServer.PORT}" }
+
     private fun askParent() = startActivity(LockActivity.intent(this, LockActivity.KIND_PARENT, ""))
 
     @Composable
@@ -141,11 +144,12 @@ class LauncherActivity : ComponentActivity() {
             Spacer(Modifier.weight(1f))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (parent) {
-                    val address = remember { Apps.lanAddress() }
-                    Text(
-                        "Quản lý trên điện thoại: http://${address ?: "địa-chỉ-box"}:${WebServer.PORT}",
-                        color = TextSecondary, fontSize = 14.sp,
-                    )
+                    val url = remember { adminUrl() }
+                    if (url != null) QrCode(url, 92.dp)
+                    Column {
+                        Text("Quét mã để quản lý trên điện thoại", color = TextPrimary, fontSize = 15.sp)
+                        Text(url ?: "TV chưa kết nối mạng", color = TextSecondary, fontSize = 14.sp)
+                    }
                     if (!GuardService.running) Text("⚠ Dịch vụ khóa chưa bật", color = Color(0xFFFFD60A), fontSize = 14.sp)
                     Pill("Khóa lại", onClick = { Store.endParent() })
                 } else {
@@ -172,11 +176,23 @@ class LauncherActivity : ComponentActivity() {
             else all.filter { it.pkg in (profile?.allowed ?: emptySet()) }
         }
         if (shown.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            if (all.isEmpty()) return // still loading
+            val url = remember { adminUrl() }
+            Column(
+                Modifier.fillMaxSize().padding(bottom = 60.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
                 Text(
-                    if (all.isEmpty()) "" else "Chưa có ứng dụng nào được phép. Ba mẹ thêm trên điện thoại nhé.",
+                    "Chưa có ứng dụng nào được phép. Ba mẹ thêm trên điện thoại nhé.",
                     color = TextSecondary, fontSize = 20.sp,
                 )
+                if (url != null) {
+                    Spacer(Modifier.height(26.dp))
+                    QrCode(url, 190.dp)
+                    Spacer(Modifier.height(14.dp))
+                    Text(url, color = TextSecondary, fontSize = 16.sp)
+                }
             }
             return
         }
@@ -257,15 +273,8 @@ class LauncherActivity : ComponentActivity() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Text(
-                when (lock.kind) {
-                    "bedtime" -> "🌙"
-                    "quota" -> "⏰"
-                    else -> "⏸"
-                },
-                fontSize = 84.sp,
-            )
-            Spacer(Modifier.height(18.dp))
+            LockArt(lock.kind, 210.dp)
+            Spacer(Modifier.height(10.dp))
             Text(lock.reason, color = TextPrimary, fontSize = 34.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(30.dp))
             Pill(

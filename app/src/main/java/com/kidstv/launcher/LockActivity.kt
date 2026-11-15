@@ -127,15 +127,9 @@ class LockActivity : ComponentActivity() {
     private fun Info(onUnlock: () -> Unit) {
         val focus = remember { FocusRequester() }
         LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
-        val symbol = when (kind) {
-            "bedtime" -> "🌙"
-            "quota" -> "⏰"
-            "paused" -> "⏸"
-            else -> "🔒"
-        }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(symbol, fontSize = 84.sp)
-            Spacer(Modifier.height(20.dp))
+            LockArt(kind, 210.dp)
+            Spacer(Modifier.height(10.dp))
             Text(reason, color = TextPrimary, fontSize = 34.sp, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(10.dp))
             Text(

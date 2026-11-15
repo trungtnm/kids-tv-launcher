@@ -12,7 +12,7 @@ Compose, không có backend. minSdk 28, targetSdk 34.
 |---|---|---|
 | Màn hình chính | `LauncherActivity.kt` | Lưới ứng dụng, chọn hồ sơ, trạng thái khóa theo giờ |
 | Màn hình khóa | `LockActivity.kt` | Thông báo lý do khóa, nhập và tạo mã PIN, cho thêm giờ |
-| Thành phần giao diện | `Ui.kt` | Nền, thẻ có hiệu ứng focus, nút, bàn phím số |
+| Thành phần giao diện | `Ui.kt` | Nền, thẻ có hiệu ứng focus, nút, bàn phím số, hình minh họa màn hình khóa, mã QR (ZXing) |
 | Dịch vụ khóa | `GuardService.kt` | Accessibility service: theo dõi ứng dụng phía trước, chặn, tính giờ, hẹn giờ tắt, đánh thức |
 | Chính sách | `Store.kt` | Hồ sơ, mã PIN, phiên đăng nhập, thời gian đã xem, hàm quyết định `decide()` |
 | Danh sách ứng dụng | `Apps.kt` | Liệt kê và mở ứng dụng, lấy banner và icon |
